@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruffle SWF Player</title>
+    <script src="ruffle-nightly-2024_10_27-web-selfhosted/ruffle.js"></script>
+</head>
+<body>
+    <h1>Ruffle SWF Player</h1>
+    <div id="container" style="width: 800px; height: 600px;"></div>
+    <script>
+        window.RufflePlayer = window.RufflePlayer || {};
+
+        window.addEventListener("DOMContentLoaded", () => {
+            let ruffle = window.RufflePlayer.newest();
+            let player = ruffle.createPlayer();
+            let container = document.getElementById("container");
+            container.appendChild(player);
+
+            // Load your SWF file
+            player.load("fpaworld3.swf");
+        });
+    </script>
+</body>
+</html>
