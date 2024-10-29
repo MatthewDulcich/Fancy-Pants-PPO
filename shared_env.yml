@@ -1,0 +1,56 @@
+name: rl_env
+channels:
+  - conda-forge
+dependencies:
+  - bzip2=1.0.8=h99b78c6_7
+  - ca-certificates=2024.8.30=hf0a4a13_0
+  - cloudpickle=3.1.0=pyhd8ed1ab_1
+  - dataclasses=0.8=pyhc8e2a94_3
+  - filelock=3.16.1=pyhd8ed1ab_0
+  - fsspec=2024.10.0=pyhff2d567_0
+  - gmp=6.3.0=h7bae524_2
+  - gmpy2=2.1.5=py311hb5ce3a2_2
+  - gymnasium=0.26.3=pyhd8ed1ab_0
+  - gymnasium-notices=0.0.1=pyh1a96a4e_0
+  - importlib-metadata=8.5.0=pyha770c72_0
+  - jinja2=3.1.4=pyhd8ed1ab_0
+  - libabseil=20240722.0=cxx17_hf9b8971_1
+  - libblas=3.9.0=25_osxarm64_openblas
+  - libcblas=3.9.0=25_osxarm64_openblas
+  - libcxx=19.1.2=ha82da77_0
+  - libexpat=2.6.3=hf9b8971_0
+  - libffi=3.4.2=h3422bc3_5
+  - libgfortran=5.0.0=13_2_0_hd922786_3
+  - libgfortran5=13.2.0=hf226fd6_3
+  - liblapack=3.9.0=25_osxarm64_openblas
+  - libopenblas=0.3.28=openmp_h517c56d_0
+  - libprotobuf=5.28.2=h8f0b736_0
+  - libsqlite=3.47.0=hbaaea75_1
+  - libtorch=2.4.1=cpu_generic_h4dfbf65_3
+  - libuv=1.49.2=h7ab814d_0
+  - libzlib=1.3.1=h8359307_2
+  - llvm-openmp=19.1.2=hb52a8e5_0
+  - markupsafe=3.0.2=py311h56c23cb_0
+  - mpc=1.3.1=h8f1351a_1
+  - mpfr=4.2.1=hb693164_3
+  - mpmath=1.3.0=pyhd8ed1ab_0
+  - ncurses=6.5=h7bae524_1
+  - networkx=3.4.2=pyhd8ed1ab_0
+  - nomkl=1.0=h5ca1d4c_0
+  - numpy=2.1.2=py311h6de8079_0
+  - openssl=3.3.2=h8359307_0
+  - pip=24.3.1=pyh8b19718_0
+  - python=3.11.10=hc51fdd5_3_cpython
+  - python_abi=3.11=5_cp311
+  - pytorch=2.4.1=cpu_generic_py311hcbffba5_3
+  - readline=8.2=h92ec313_1
+  - setuptools=75.1.0=pyhd8ed1ab_0
+  - sleef=3.7=h7783ee8_0
+  - sympy=1.13.3=pypyh2585a3b_103
+  - tk=8.6.13=h5083fa2_1
+  - typing_extensions=4.12.2=pyha770c72_0
+  - tzdata=2024b=hc8b5060_0
+  - wheel=0.44.0=pyhd8ed1ab_0
+  - xz=5.2.6=h57fd34a_0
+  - zipp=3.20.2=pyhd8ed1ab_0
+prefix: /Users/matthewdulcich/miniforge3/envs/rl_env
