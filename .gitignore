@@ -165,3 +165,10 @@ FancyBox/
 ruffle-nightly-2024_10_27-web-selfhosted
 ruffle-nightly-2024_10_27-web-selfhosted.zip
 fpaworld3.swf
+
+agent.py
+dqn.py
+logs/
+test.ipynb
+test.py
+video.gif
