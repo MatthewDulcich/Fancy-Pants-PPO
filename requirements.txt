@@ -15,3 +15,5 @@ sympy
 torch 
 typing_extensions 
 zipp 
+pyautogui
+pyobjc

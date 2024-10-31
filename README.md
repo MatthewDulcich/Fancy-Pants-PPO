@@ -20,3 +20,4 @@ brew upgrade ruffle --fetch-HEAD
 Put them in the main directory, it should look like this
 fpaworld3.swf
 
+## Check to make sure Privacy and Security > Accesibility > VSCode switch is toggled on
