@@ -64,10 +64,12 @@ def enter_game(window):
     pyautogui.press('up')
 
     time.sleep(3)
-    pyautogui.press('up 3')
+    pyautogui.press('up')
+    time.sleep(3)
 
-    time.sleep(13)
+    time.sleep(10)
     pyautogui.press('s')
+    print("Pressing s")
 
     # Press and hold the left arrow key for 1 second
     pyautogui.keyDown('left')
@@ -76,7 +78,9 @@ def enter_game(window):
     pyautogui.keyUp('up')
     pyautogui.keyUp('left')
 
-    
+    # pyautogui.keyDown('right')
+    # time.sleep(10)
+    # pyautogui.keyUp('right')
 
 
 if __name__ == "__main__":
