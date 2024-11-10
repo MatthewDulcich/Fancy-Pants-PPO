@@ -45,3 +45,7 @@ def start_server():
                 print("\nServer stopped.")
     else:
         print(f"Port {PORT} is still in use. Please free the port and try again.")
+
+if __name__ == "__main__":
+    start_server()
+    
