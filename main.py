@@ -3,6 +3,8 @@ import enter_game
 import multiprocessing
 import time
 
+print('wtf is happening')
+
 def run_server():
     launch_ruffle.start_server()
 
@@ -18,11 +20,14 @@ def run_enter_game():
         print("No Safari window found.")
 
 if __name__ == "__main__":
+    print('here')
     # Kill any existing process on the port before starting
     launch_ruffle.kill_port(launch_ruffle.PORT)
     
     # Create processes for the server and the enter_game function
+    print('here now')
     server_process = multiprocessing.Process(target=run_server)
+    print('here now hjskfkdjsflks')
     game_process = multiprocessing.Process(target=run_enter_game)
     
     # Start both processes
