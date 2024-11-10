@@ -67,8 +67,7 @@ def enter_game(window):
     pyautogui.press('up')
     time.sleep(3)
 
-    time.sleep(15)
-    print("Pressing s")
+    time.sleep(10)
     pyautogui.press('s')
 
     # Press and hold the left arrow key for 1 second
