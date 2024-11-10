@@ -51,7 +51,7 @@ def enter_game(window):
     # Send keyboard inputs
     # pyautogui.press('enter')
 
-    time.sleep(10)
+    time.sleep(15)
 
     # Move the mouse to the top-right corner of the window
     pyautogui.moveTo(top_right_x, top_right_y + 198, duration=0.5)
@@ -67,7 +67,7 @@ def enter_game(window):
     pyautogui.press('up')
     time.sleep(3)
 
-    time.sleep(10)
+    time.sleep(5)
     pyautogui.press('s')
     print("Pressing s")
 
