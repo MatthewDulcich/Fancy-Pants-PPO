@@ -49,7 +49,7 @@ class FPAGame(Env):
         if action != 6:
             key_toggle(action_map[action]) # TODO: Fix key_toggle
 
-        # TODO: Get observation, reward, done
+        # TODO: Get observation, reward, done, etc
 
         pass
     
