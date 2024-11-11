@@ -15,7 +15,7 @@ class FPAGame(Env):
     # Setup env, action, and obs shapes
     def __init__(self):
         super().__init__()
-        self.observation_space = Box(low=0, high=255, shape=(1, 400, 800), dtype=np.uint8)
+        self.observation_space = Box(low=0, high=255, shape=(1, 800, 1100), dtype=np.uint8)
         self.action_space = Discrete(7) # Number of actions
         self.key_states = {} # Initialize empty key states to keep track of key presses
 
