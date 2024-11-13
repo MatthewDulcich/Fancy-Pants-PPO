@@ -57,7 +57,7 @@ def enter_game(window):
     pyautogui.moveTo(top_right_x, top_right_y + 198, duration=0.5)
     pyautogui.click()
 
-    time.sleep(13)
+    time.sleep(10)
     pyautogui.press('up')
 
     time.sleep(3)
@@ -65,7 +65,6 @@ def enter_game(window):
 
     time.sleep(3)
     pyautogui.press('up')
-    time.sleep(3)
 
     time.sleep(10)
     pyautogui.press('s')
