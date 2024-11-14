@@ -77,9 +77,9 @@ def enter_game(window):
     pyautogui.keyUp('up')
     pyautogui.keyUp('left')
 
-    # pyautogui.keyDown('right')
-    # time.sleep(10)
-    # pyautogui.keyUp('right')
+    time.sleep(10)
+
+    print('done with enter_game')
 
 
 if __name__ == "__main__":
