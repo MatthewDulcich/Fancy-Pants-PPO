@@ -4,12 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ruffle SWF Player</title>
+    <style>
+        /* Remove any padding or margin from the body and container */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #container {
+            width: 800px;
+            height: 600px;
+        }
+    </style>
     <script src="ruffle-nightly-2024_10_27-web-selfhosted/ruffle.js"></script>
     <script src="ruffle-nightly-2024_11_03-web-selfhosted/ruffle.js"></script>
 </head>
 <body>
-    <h1>Ruffle SWF Player</h1>
-    <div id="container" style="width: 800px; height: 600px;"></div>
+    <div id="container"></div>
     <script>
         window.RufflePlayer = window.RufflePlayer || {};
 

@@ -54,7 +54,7 @@ def enter_game(window):
     time.sleep(10)
 
     # Move the mouse to the top-right corner of the window
-    pyautogui.moveTo(top_right_x, top_right_y + 198, duration=0.5)
+    pyautogui.moveTo(top_right_x, top_right_y + 118, duration=0.5)
     pyautogui.click()
 
     time.sleep(10)
