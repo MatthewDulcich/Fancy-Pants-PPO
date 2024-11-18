@@ -108,8 +108,11 @@ def capture_observation(canvas_info, content_offset):
             "width": int(canvas_info["width"]),
             "height": int(canvas_info["height"])
         }
+        # show the monitor configuration
+        print("Monitor Configuration:", monitor)
         screenshot = sct.grab(monitor)
         canvas_pixels = np.array(screenshot)
+        print("Screenshot captured: shape =", canvas_pixels.shape)
         return canvas_pixels
 
 def capture_multiple_observations(canvas_info, content_offset, num_screenshots=10):
@@ -158,7 +161,9 @@ def main():
 
         # Observation setup: fetch canvas size and content offset
         canvas_info = fetch_canvas_position_and_size(driver)
+        print("Canvas Info:", canvas_info)
         content_offset = fetch_content_offset(driver)
+        print("Content Offset:", content_offset)
 
         if canvas_info:
             # Observation collection

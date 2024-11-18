@@ -56,12 +56,13 @@ def enter_game(window):
     # Move the mouse to the top-right corner of the window
     pyautogui.moveTo(top_right_x, top_right_y + 118, duration=0.5)
     pyautogui.click()
-
     time.sleep(10)
-    pyautogui.press('up')
 
-    time.sleep(3)
-    pyautogui.press('up')
+    # Replace repeated `pyautogui.press` calls with loops
+    for _ in range(3):
+        time.sleep(2)
+        pyautogui.press('up')
+        print("Pressing up")
 
     time.sleep(3)
     pyautogui.press('up')
@@ -74,12 +75,14 @@ def enter_game(window):
     pyautogui.keyDown('left')
     pyautogui.keyDown('up')
     time.sleep(1)
+    pyautogui.keyUp('s')
     pyautogui.keyUp('up')
-    pyautogui.keyUp('left')
+    pyautogui.keyUp('right')
+    time.sleep(3)
+    pyautogui.keyDown('right')
+    pyautogui.keyDown('up')
 
-    time.sleep(10)
-
-    print('done with enter_game')
+    print("Done entering game.")
 
 
 if __name__ == "__main__":
