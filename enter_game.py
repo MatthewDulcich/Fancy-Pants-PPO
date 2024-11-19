@@ -1,6 +1,6 @@
 import pyautogui
 import time
-from window_management import get_most_recent_window_by_owner, list_windows
+from window_management import get_most_recent_window_by_owner
 from safari_operations import get_safari_window_coordinates, adjust_for_menu_bar
 from play_again_OCR import wait_for_text, click_center_of_region
 
@@ -62,9 +62,6 @@ def enter_game(window):
 # --- Main Script ---
 
 if __name__ == "__main__":
-    # List all open windows
-    list_windows()
-
     # Get the most recently opened Safari window
     safari_window = get_most_recent_window_by_owner("Safari")
     if safari_window:

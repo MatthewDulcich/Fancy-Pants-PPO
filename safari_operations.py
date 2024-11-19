@@ -36,8 +36,23 @@ def adjust_for_menu_bar(safari_window, button_region):
     menu_bar_offset = 88  # Adjust based on macOS menu bar size
 
     return (
-        safari_left + button_region[0],  # Adjust for Safari window's left
-        safari_top + menu_bar_offset + button_region[1],  # Adjust for Safari window's top and menu bar
-        button_region[2],  # Width stays the same
-        button_region[3],  # Height stays the same
+        safari_left + button_region[0],
+        safari_top + menu_bar_offset + button_region[1],
+        button_region[2],
+        button_region[3],
     )
+
+# --- Main Script ---
+
+if __name__ == "__main__":
+    # Get Safari window coordinates
+    safari_window = get_safari_window_coordinates()
+    if safari_window:
+        print("Safari Window Coordinates:", safari_window)
+        # Adjust button region for Safari window
+        button_region = (200, 300, 140, 40)
+        adjusted_button_region = adjust_for_menu_bar(safari_window, button_region)
+        print("'Play Now!' Button Region (relative):", button_region)
+        print("Adjusted Button Region (gobal):", adjusted_button_region)
+    else:
+        print("Failed to fetch Safari window coordinates.")

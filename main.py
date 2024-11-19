@@ -1,5 +1,5 @@
 import numpy as np
-import launch_ruffle
+import launch_fpa_game
 import enter_game
 import multiprocessing
 import time
@@ -147,7 +147,7 @@ def cleanup(server_process, safari_process):
 # Main function with modular steps conducive to PPO integration
 def main():
     # Kill any existing process on the port before starting
-    launch_ruffle.kill_port(PORT)
+    launch_fpa_game.kill_port(PORT)
 
     # Start environment: Ruffle host server and Safari WebDriver
     server_process = start_ruffle_host()
