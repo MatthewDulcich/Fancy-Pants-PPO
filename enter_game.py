@@ -1,93 +1,70 @@
 import pyautogui
 import time
-import Quartz
-from AppKit import NSWorkspace
+from window_management import get_most_recent_window_by_owner, list_windows
+from safari_operations import get_safari_window_coordinates, adjust_for_menu_bar
+from play_again_OCR import wait_for_text, click_center_of_region
 
-# This function retrieves a list of all windows with their titles and owner names
-def get_window_list():
-    window_list = []
-    window_info_list = Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionOnScreenOnly, Quartz.kCGNullWindowID)
-    for window_info in window_info_list:
-        window_title = window_info.get('kCGWindowName', 'No Title')
-        window_owner_name = window_info.get('kCGWindowOwnerName', 'Unknown')
-        window_layer = window_info.get('kCGWindowLayer', 0)
-        window_list.append((window_title, window_owner_name, window_layer, window_info))
-    return window_list
-
-# This function will look for the most recently opened window with a specific owner name
-def get_most_recent_window_by_owner(owner_name):
-    windows = get_window_list()
-    # Filter windows by owner name
-    owner_windows = [window for window in windows if owner_name.lower() in window[1].lower()]
-    # Sort windows by layer (higher layer means more recent)
-    owner_windows.sort(key=lambda x: x[2], reverse=True)
-    return owner_windows[0][3] if owner_windows else None
-
-def list_windows():
-    windows = get_window_list()
-    # Sort windows by owner name
-    windows.sort(key=lambda x: x[1])
-    print("Open windows:")
-    for i, (title, owner, _, _) in enumerate(windows):
-        print(f"{i + 1}: {title} (Owner: {owner})")
-    return windows
+# --- Game Automation Functions ---
 
 def enter_game(window):
-    # Get the window's position and size
+    """
+    Automates entering the game by dynamically detecting the "Play Now" button
+    and pressing the required keys to start the game.
+    """
+    # Step 1: Get window position and size
     window_bounds = window['kCGWindowBounds']
     window_left = window_bounds['X']
     window_top = window_bounds['Y']
-    window_width = window_bounds['Width']
-    window_height = window_bounds['Height']
-    
-    # Calculate the top-right corner coordinates
-    top_right_x = window_left + 300
-    top_right_y = window_top + 300
-    
-    # Move the mouse to the top-right corner of the window
-    pyautogui.moveTo(top_right_x, top_right_y, duration=0.5)
+
+    # Initial click to focus the game window
+    pyautogui.moveTo(window_left + 150, window_top + 150, duration=0.5)  # Center of initial area
     pyautogui.click()
-    
-    # Send keyboard inputs
-    # pyautogui.press('enter')
 
-    time.sleep(15)
+    # Step 2: Get Safari window coordinates
+    safari_window = get_safari_window_coordinates()
+    if not safari_window:
+        print("Failed to fetch Safari window coordinates.")
+        return
 
-    # Move the mouse to the top-right corner of the window
-    pyautogui.moveTo(top_right_x, top_right_y + 118, duration=0.5)
-    pyautogui.click()
-    time.sleep(10)
+    # Step 3: Define button region and adjust for Safari window position
+    button_region = (200, 300, 140, 40)  # Relative coordinates (x, y, width, height)
+    adjusted_button_region = adjust_for_menu_bar(safari_window, button_region)
+    print("Adjusted Button Region:", adjusted_button_region)
 
-    # Replace repeated `pyautogui.press` calls with loops
-    for _ in range(3):
+    # Step 4: Wait for the "Play Now" text and click
+    if wait_for_text(region=adjusted_button_region, target_text="Play Now"):
+        print("Detected 'Play Now'. Clicking the button...")
+        click_center_of_region(adjusted_button_region)
+        time.sleep(15)  # Wait for the game to load
+    else:
+        print("Timeout reached. 'Play Now' not detected.")
+        return
+
+    # Step 5: Automate key presses to navigate into the game
+    key_sequence = ['up', 'up', 'up', 's']  # Navigation keys to enter the game
+    for key in key_sequence:
+        pyautogui.press(key)
+        print(f"Pressing {key}")
         time.sleep(2)
-        pyautogui.press('up')
-        print("Pressing up")
 
-    time.sleep(3)
-    pyautogui.press('up')
-
-    time.sleep(10)
-    pyautogui.press('s')
-    print("Pressing s")
-
-    # Press and hold the left arrow key for 1 second
+    # Step 6: Simulate arrow key movements
     pyautogui.keyDown('left')
     pyautogui.keyDown('up')
     time.sleep(1)
-    pyautogui.keyUp('s')
+    pyautogui.keyUp('left')
     pyautogui.keyUp('up')
-    pyautogui.keyUp('right')
     time.sleep(3)
     pyautogui.keyDown('right')
     pyautogui.keyDown('up')
-
     print("Done entering game.")
 
 
+# --- Main Script ---
+
 if __name__ == "__main__":
-    windows = list_windows()
-    # print(windows)
+    # List all open windows
+    list_windows()
+
     # Get the most recently opened Safari window
     safari_window = get_most_recent_window_by_owner("Safari")
     if safari_window:
