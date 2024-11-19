@@ -6,6 +6,11 @@ import cv2
 from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 import traceback
+import json
+
+config_file = "game_config.json"
+with open(config_file, 'r') as file:
+        config = json.load(file)
 
 class FPAGame(Env):
     def __init__(self, game_location):
@@ -14,6 +19,7 @@ class FPAGame(Env):
         self.action_space = Discrete(7)  # Number of actions
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
+        self.prev_observation = None  # Initialize prev_observation
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -26,65 +32,69 @@ class FPAGame(Env):
 
     def step(self, action):
         action_map = {
-            0: ['left'],         # Brief press: Left
-            1: ['right'],        # Brief press: Right
-            2: ['s'],            # Brief press: Jump
-            3: ['down'],         # Brief press: Duck
-            4: ['left'],         # Hold: Left
-            5: ['right'],        # Hold: Right
-            6: ['s'],            # Hold: Jump
-            7: ['down'],         # Hold: Duck
-            8: [],               # No-op
+            0: ('left', 0.1),         # Brief press: Left
+            1: ('right', 0.1),        # Brief press: Right
+            2: ('s', 0.1),            # Brief press: Jump
+            3: ('down', 0.1),         # Brief press: Duck
+            4: ('left', 1.5),         # Hold: Left
+            5: ('right', 1.5),        # Hold: Right
+            6: ('s', 1.5),            # Hold: Jump
+            7: ('down', 1.5),         # Hold: Duck
+            8: (None, 0),             # No-op
         }
 
-        # Ensure game window is in focus
-        pyautogui.click(x=self.game_location['left'] + 60, y=self.game_location['top'] + 60)
-
-        # Debug: Print action and keys
-        print(f"Performing action: {action}, Key(s): {action_map[action]}")
+        key, duration = action_map[action]
+        print(f"Performing action: {action}, Key: {key}, Duration: {duration}")
 
         # Perform the action
-        if action in [4, 5, 6, 7]:  # Hold actions
-            for key in action_map[action]:
-                pyautogui.keyDown(key)
-            time.sleep(1.5)  # Adjust hold duration
-            for key in action_map[action]:
-                pyautogui.keyUp(key)
-        elif action in [0, 1, 2, 3]:  # Brief press actions
-            for key in action_map[action]:
-                pyautogui.keyDown(key)
-            time.sleep(0.1)  # Brief press
-            for key in action_map[action]:
-                pyautogui.keyUp(key)
+        if key:
+            pyautogui.keyDown(key)
+            time.sleep(duration)
+            pyautogui.keyUp(key)
 
-        # Capture the next observation
-        prev_obs = self.get_observation()
-        observation = self.get_observation()
+        # Capture observation after action
+        new_observation = self.get_observation()
 
-        # Debug: Check observation difference
-        diff = np.sum(np.abs(prev_obs - observation))
-        print(f"Frame difference after action {action}: {diff}")
+        # Ensure prev_observation is initialized
+        if self.prev_observation is None:
+            self.prev_observation = new_observation
 
-        # Check if the game is in the finished state
-        done = self.get_done()
+        # Calculate frame difference
+        frame_diff = np.mean(np.abs(self.prev_observation - new_observation))
+        print(f"Frame difference after action {action}: {frame_diff}")
 
-        # Reward logic
-        if done:
-            reward = 100  # Large reward for completing the level
-        elif diff > 0:
-            reward = 10  # Reward for visible progress
+        # Update previous observation
+        self.prev_observation = new_observation
+
+        # Determine reward
+        reward = 10 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
+        if self.get_done():
+            reward = 100
+            done = True
         else:
-            reward = -1  # Penalize no progress
+            done = False
 
-        info = {}
-        return observation, reward, done, info
+        return new_observation, reward, done, {}
+
+    # Reset the environment
+    def reset(self):
+        """
+        Reset the environment and return the initial observation.
+        """
+        print("Resetting the environment...")
+
+        # Simulate pressing a reset key (e.g., restart game)
+        pyautogui.press('r')  # Replace with the appropriate reset command
+        time.sleep(2)  # Allow time for the reset
+
+        # Capture the initial observation
+        self.prev_observation = self.get_observation()  # Initialize prev_observation
+        return self.prev_observation
     
     # Visualize the game (get observation)
     def render(self):
         pass
-    # Reset the game
-    def reset(self):
-        pass
+
     # Close the observation (closes render)
     def close(self):
         pass
@@ -103,10 +113,10 @@ class FPAGame(Env):
             frame = np.array(screenshot)[:, :, :3]
             # Convert to grayscale
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
-            # Resize to match observation space
-            resized_frame = cv2.resize(gray_frame, (800, 600))  # Width x Height
+            # Downscale (smaller resolution for faster computation)
+            downscaled_frame = cv2.resize(gray_frame, (config['down_scaled']['width'], config['down_scaled']['height']))
             # Add channel dimension for compatibility
-            observation = np.expand_dims(resized_frame, axis=0)
+            observation = np.expand_dims(downscaled_frame, axis=0)
             return observation
         
     def get_done(self):

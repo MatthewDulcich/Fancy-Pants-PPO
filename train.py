@@ -16,9 +16,6 @@ config_file = "game_config.json"
 with open(config_file, 'r') as file:
         config = json.load(file)
 
-
-
-
 def main():
     """
     Main function to set up the environment, enter the tutorial level, and capture observations
@@ -105,13 +102,10 @@ def main():
         traceback.print_exc()
 
     finally:
-        # Cleanup resources
-        print("Cleaning up resources...")
         if env:
             env.cleanup_resources(server_process, safari_process)
         elif server_process and safari_process:
             game_env_setup.cleanup(server_process, safari_process)
 
-    print("All processes terminated successfully.")
 if __name__ == "__main__":
     main()
