@@ -17,7 +17,7 @@ def enter_game(window):
     window_top = window_bounds['Y']
 
     # Initial click to focus the game window
-    pyautogui.moveTo(window_left + 150, window_top + 150, duration=0.5)  # Center of initial area
+    pyautogui.moveTo(window_left + 300, window_top + 300, duration=0.5)  # Center of initial area
     pyautogui.click()
 
     # Step 2: Get Safari window coordinates
@@ -35,7 +35,7 @@ def enter_game(window):
     if wait_for_text(region=adjusted_button_region, target_text="Play Now"):
         print("Detected 'Play Now'. Clicking the button...")
         click_center_of_region(adjusted_button_region)
-        time.sleep(15)  # Wait for the game to load
+        time.sleep(10)  # Wait for the game to load
     else:
         print("Timeout reached. 'Play Now' not detected.")
         return
@@ -43,9 +43,9 @@ def enter_game(window):
     # Step 5: Automate key presses to navigate into the game
     key_sequence = ['up', 'up', 'up', 's']  # Navigation keys to enter the game
     for key in key_sequence:
+        time.sleep(2)
         pyautogui.press(key)
         print(f"Pressing {key}")
-        time.sleep(2)
 
     # Step 6: Simulate arrow key movements
     pyautogui.keyDown('left')
