@@ -52,7 +52,7 @@ class FPAGame(Env):
         }
 
         # Ensure game window is in focus
-        pyautogui.click(x=self.game_location['left'] + 30, y=self.game_location['top'] + 30)
+        pyautogui.click(x=self.game_location['left'] + 60, y=self.game_location['top'] + 60)
 
         # Debug: Print action and keys
         print(f"Performing action: {action}, Key(s): {action_map[action]}")
