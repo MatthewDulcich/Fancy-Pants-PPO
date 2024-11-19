@@ -21,3 +21,5 @@ Put them in the main directory, it should look like this
 fpaworld3.swf
 
 ## Check to make sure Privacy and Security > Accesibility > VSCode switch is toggled on
+
+## You must enable 'Allow remote automation' in the Developer section of Safari Settings to control Safari via WebDriver.
