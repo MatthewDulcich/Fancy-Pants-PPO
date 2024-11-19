@@ -4,7 +4,7 @@ import pytesseract
 
 # --- OCR and Interaction Functions ---
 
-def wait_for_text(region, target_text, timeout=30, check_interval=1):
+def wait_for_text(region, target_text, timeout=60, check_interval=1):
     """
     Waits until the specified text appears in a given screen region.
     """
