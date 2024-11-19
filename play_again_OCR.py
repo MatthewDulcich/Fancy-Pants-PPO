@@ -32,7 +32,7 @@ def click_center_of_region(region):
     """
     center_x = region[0] + region[2] // 2
     center_y = region[1] + region[3] // 2
-    pyautogui.moveTo(center_x, center_y, duration=0.5)
+    pyautogui.moveTo(center_x, center_y, duration=0.1)
     pyautogui.click()
 
 # --- Main Script ---

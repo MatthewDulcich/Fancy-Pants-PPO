@@ -45,6 +45,16 @@ def start_safari_webdriver(game_url):
     time.sleep(5)
     return safari_process, driver
 
+# Launch safari host given the game url
+def launch_safari_host(game_url):
+    """
+    Launches the Safari browser with the specified game URL.
+    """
+    print("Launching Safari browser...")
+    safari_process = subprocess.Popen(["open", "-a", "Safari", game_url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    time.sleep(5)
+    print("Safari browser launched.")
+    return safari_process
 
 def fetch_canvas_position_and_size(driver):
     """

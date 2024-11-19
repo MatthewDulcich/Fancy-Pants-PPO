@@ -8,18 +8,22 @@ with open(config_file, 'r') as file:
 # function to kill the port
 def kill_port(port):
     """
-    Kills the process running on the specified port.
+    Kills the process running on the specified port if it exists.
     """
     import os
     import subprocess
 
     try:
+        # Check for a process running on the port
         output = subprocess.check_output(["lsof", "-t", "-i", f":{port}"])
         pid = int(output.decode().strip())
         os.system(f"kill {pid}")
         print(f"Process running on port {port} terminated successfully.")
+    except subprocess.CalledProcessError:
+        # No process found on the port
+        print(f"No process is running on port {port}.")
     except Exception as e:
-        print(f"Failed to terminate process on port {port}:", e)
+        print(f"An error occurred while trying to terminate the process on port {port}:", e)
 
 if __name__ == "__main__":
     # Start the Ruffle host server and Safari WebDriver

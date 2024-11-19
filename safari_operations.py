@@ -48,7 +48,6 @@ if __name__ == "__main__":
     # Get Safari window coordinates
     safari_window = get_safari_window_coordinates()
     if safari_window:
-        print("Safari Window Coordinates:", safari_window)
         # Adjust button region for Safari window
         button_region = (200, 300, 140, 40)
         adjusted_button_region = adjust_for_menu_bar(safari_window, button_region)

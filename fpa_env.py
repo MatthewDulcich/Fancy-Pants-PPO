@@ -16,6 +16,7 @@ import launch_fpa_game
 import game_env_setup
 import enter_game
 import safari_operations
+import mute_safari_tab
 
 config_file = "game_config.json"
 with open(config_file, 'r') as file:
@@ -151,6 +152,7 @@ class FPAGame(Env):
             print("An error occurred during cleanup:", e)
             traceback.print_exc()
 
+
 def main():
     """
     Main function to set up the environment, enter the tutorial level, and capture observations
@@ -166,9 +168,9 @@ def main():
         launch_fpa_game.kill_port(config['PORT'])  # Ensure the port is available
         server_process = game_env_setup.start_ruffle_host(config['PORT'])
 
-        # Step 2: Start Safari WebDriver
-        print("Starting Safari WebDriver and navigating to game URL...")
-        safari_process, driver = game_env_setup.start_safari_webdriver(config['GAME_URL'])
+        # Step 2: Launch the game in Safari
+        print("Launching the game in Safari...")
+        safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
 
         # Step 3: Automate entering the tutorial level
         print("Automating game entry to reach the tutorial level...")
@@ -176,11 +178,14 @@ def main():
         if not safari_window:
             raise Exception("No Safari window found. Exiting...")
         
-        enter_game.enter_game(safari_window)  # Navigate to the tutorial level
+        # mute_safari_tab.mute_specific_tab(driver)  # Mute the game tab
+
+        enter_game.enter_game(safari_window, pre_loaded=True)  # Navigate to the tutorial level
 
         # Step 4: Fetch canvas information and content offset
         print("Fetching game canvas size and position...")
-        canvas_info = game_env_setup.fetch_canvas_position_and_size(driver)
+        # canvas_info = game_env_setup.fetch_canvas_position_and_size(driver)
+        canvas_info = {'top': 0, 'left': 0, 'width': 550, 'height': 400}
         if not canvas_info:
             raise Exception("Failed to fetch canvas info. Exiting...")
 
@@ -198,7 +203,7 @@ def main():
         if not safari_coords:
             raise Exception("Failed to fetch Safari window coordinates. Exiting...")
         adjusted_game_location = {
-            'top': game_location['top'] + safari_coords['top'],
+            'top': game_location['top'] + safari_coords['top'] + 60,  # Adjust for menu bar
             'left': game_location['left'] + safari_coords['left'],
             'width': game_location['width'],
             'height': game_location['height'],
@@ -212,9 +217,6 @@ def main():
         # Step 6: Capture initial observation to verify setup
         print("Capturing initial observation from the game...")
         obs = env.get_observation()
-        plt.imshow(obs[0], cmap='gray')  # Display the first channel as grayscale
-        plt.title("Initial Observation")
-        # plt.show()
 
         # Step 7: Run 10 random actions
         print("Running 10 random actions in the environment...")
@@ -223,12 +225,10 @@ def main():
             action = random.randint(0, env.action_space.n - 1)  # Random action
             obs, reward, done, info = env.step(action)
             rewards += reward
+            print(f"Step {i+1}: Action = {action}, Reward = {reward}, Done = {done}")
 
-            # Display the observation and action info
-            print(f"Step {i+1}: Action = {action}, Reward = {reward}, Cumulative Rewards = {rewards}, Done = {done}")
-            plt.imshow(obs[0], cmap='gray')
-            plt.title(f"Step {i+1}: Action {action}")
-            # plt.show()
+            # save image locally
+            cv2.imwrite(f"step_{i+1}.png", obs[0])
 
             if done:
                 print("Finished the level!")
@@ -246,7 +246,6 @@ def main():
         elif server_process and safari_process:
             game_env_setup.cleanup(server_process, safari_process)
 
-        print("All processes terminated successfully.")
-
+    print("All processes terminated successfully.")
 if __name__ == "__main__":
     main()
