@@ -2,13 +2,15 @@ import subprocess
 import time
 import mss
 import numpy as np
+import json
+
+# --- Game Environment Constants ---
+
+config_file = "game_config.json"
+with open(config_file, 'r') as file:
+        config = json.load(file)
 
 # --- Game Environment Functions ---
-
-# Configuration
-PORT = 8000
-GAME_URL = f"http://localhost:{PORT}/launch_ruffle.html"
-SAFARI_WEBDRIVER_URL = "http://localhost:4444"
 
 def start_ruffle_host(port=8000):
     """
@@ -102,29 +104,3 @@ def cleanup(server_process, safari_process):
     safari_process.wait()
     print("Processes terminated.")
 
-# --- Main Script ---
-
-if __name__ == "__main__":
-    # Start the Ruffle host server and Safari WebDriver
-    server_process = start_ruffle_host()
-    safari_process, driver = start_safari_webdriver(GAME_URL)
-
-    # Fetch canvas position and size
-    canvas_info = fetch_canvas_position_and_size(driver)
-    if not canvas_info:
-        cleanup(server_process, safari_process)
-        exit()
-
-    # Fetch content offset to exclude browser menu and toolbars
-    content_offset = driver.execute_script('''
-        return {
-            xOffset: window.screenX + window.outerWidth - window.innerWidth,
-            yOffset: window.screenY + window.outerHeight - window.innerHeight
-        };
-    ''')
-
-    # Capture the game observation
-    canvas_pixels = capture_observation(canvas_info, content_offset)
-
-    # Cleanup processes
-    cleanup(server_process, safari_process)

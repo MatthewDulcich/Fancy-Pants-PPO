@@ -1,0 +1,5 @@
+{
+    "PORT": 8000,
+    "GAME_URL": "http://localhost:8000/launch_ruffle.html",
+    "SAFARI_WEBDRIVER_URL": "http://localhost:4444"
+}

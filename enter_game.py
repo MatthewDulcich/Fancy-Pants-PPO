@@ -35,7 +35,7 @@ def enter_game(window):
     if wait_for_text(region=adjusted_button_region, target_text="Play Now"):
         print("Detected 'Play Now'. Clicking the button...")
         click_center_of_region(adjusted_button_region)
-        time.sleep(10)  # Wait for the game to load
+        time.sleep(13)  # Wait for the game to load
     else:
         print("Timeout reached. 'Play Now' not detected.")
         return
