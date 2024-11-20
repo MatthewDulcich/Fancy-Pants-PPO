@@ -12,7 +12,7 @@ def track_swirlies(observation, template, prev_swirlies):
         prev_swirlies (list): List of positions of swirlies in the previous frame.
     
     Returns:
-        reward (int): The reward based on the presence of swirlies.
+        num_swirlies (int): The num_swirlies based on the presence of swirlies.
         current_swirlies (list): List of positions of swirlies in the current frame.
         collected_swirlies (int): Number of swirlies collected.
     """
@@ -31,8 +31,8 @@ def track_swirlies(observation, template, prev_swirlies):
     # Find all locations where the match exceeds the threshold
     locations = np.where(result >= threshold)
     
-    # Initialize reward and collected swirlies count
-    reward = 0
+    # Initialize num_swirlies and collected swirlies count
+    num_swirlies = 0
     collected_swirlies = 0
     
     # Define the size of the box
@@ -93,7 +93,7 @@ def track_swirlies(observation, template, prev_swirlies):
         if overlap_ratio >= 0.25:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
             cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
-            # reward += 10  # Assign a reward for each swirly detected on screen
+            # num_swirlies += 10  # Assign a num_swirlies for each swirly detected on screen
             print(f"Swirly on screen at: {pt}")
         else:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
@@ -115,7 +115,7 @@ def track_swirlies(observation, template, prev_swirlies):
                 if frame_rect[0] <= prev_swirlies[i][0] <= frame_rect[2] and frame_rect[1] <= prev_swirlies[i][1] <= frame_rect[3]:
                     collected_swirlies += 1
     
-    reward = collected_swirlies * 10  # Assign a reward for each swirly collected
+    num_swirlies = collected_swirlies * 10  # Assign a num_swirlies for each swirly collected
     # Print the number of swirlies detected
     print(f"Number of swirlies detected: {len(indices)}")
     print(f"Number of swirlies collected: {collected_swirlies}")
@@ -125,7 +125,7 @@ def track_swirlies(observation, template, prev_swirlies):
     cv2.waitKey(0)  # Wait indefinitely until a key is pressed
     cv2.destroyAllWindows()
     
-    return reward, current_swirlies, collected_swirlies
+    return num_swirlies, current_swirlies, collected_swirlies
 
 # Example usage
 if __name__ == "__main__":
@@ -149,9 +149,9 @@ if __name__ == "__main__":
     
     # Loop through each observation and track swirlies
     for i, observation in enumerate(observations):
-        reward, current_swirlies, collected_swirlies = track_swirlies(observation, template, prev_swirlies)
+        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(observation, template, prev_swirlies)
         print(f"Observation {i+1}:")
-        print(f"Reward: {reward}")
+        print(f"num_swirlies: {num_swirlies}")
         print(f"Collected Swirlies: {collected_swirlies}")
         
         # Update previous swirlies list
