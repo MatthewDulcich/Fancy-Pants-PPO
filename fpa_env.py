@@ -16,7 +16,7 @@ class FPAGame(Env):
     def __init__(self, game_location):
         super().__init__()
         self.observation_space = Box(low=0, high=255, shape=(1, 400, 800), dtype=np.uint8)
-        self.action_space = Discrete(7)  # Number of actions
+        self.action_space = Discrete(5)  # Number of actions
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
         self.prev_observation = None  # Initialize prev_observation
@@ -32,26 +32,20 @@ class FPAGame(Env):
 
     def step(self, action):
         action_map = {
-            0: ('left', 0.1),         # Brief press: Left
-            1: ('right', 0.1),        # Brief press: Right
-            2: ('s', 0.1),            # Brief press: Jump
-            3: ('down', 0.1),         # Brief press: Duck
-            4: ('left', 1.5),         # Hold: Left
-            5: ('right', 1.5),        # Hold: Right
-            6: ('s', 1.5),            # Hold: Jump
-            7: ('down', 1.5),         # Hold: Duck
-            8: (None, 0),             # No-op
+            0: 'left',         # press: Left
+            1: 'right',        # press: Right
+            2: 's',            # press: Jump
+            3: 'down',         # press: Duck
+            4: 'no_action'     # No-op
         }
 
-        key, duration = action_map[action]
-        print(f"Performing action: {action}, Key: {key}, Duration: {duration}")
-
+        key = action_map[action]
+        print(f"Performing action: {action}, Key: {key}")
+        
         # Perform the action
-        if key:
-            pyautogui.keyDown(key)
-            time.sleep(duration)
-            pyautogui.keyUp(key)
-
+        if key != 4:
+            self.key_toggle(key)
+        
         # Capture observation after action
         new_observation = self.get_observation()
 
