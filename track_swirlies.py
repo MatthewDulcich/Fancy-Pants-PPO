@@ -93,7 +93,7 @@ def track_swirlies(observation, template, prev_swirlies):
         if overlap_ratio >= 0.25:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
             cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
-            reward += 10  # Assign a reward for each swirly detected on screen
+            # reward += 10  # Assign a reward for each swirly detected on screen
             print(f"Swirly on screen at: {pt}")
         else:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
@@ -115,6 +115,7 @@ def track_swirlies(observation, template, prev_swirlies):
                 if frame_rect[0] <= prev_swirlies[i][0] <= frame_rect[2] and frame_rect[1] <= prev_swirlies[i][1] <= frame_rect[3]:
                     collected_swirlies += 1
     
+    reward = collected_swirlies * 10  # Assign a reward for each swirly collected
     # Print the number of swirlies detected
     print(f"Number of swirlies detected: {len(indices)}")
     print(f"Number of swirlies collected: {collected_swirlies}")
@@ -128,26 +129,30 @@ def track_swirlies(observation, template, prev_swirlies):
 
 # Example usage
 if __name__ == "__main__":
-    # Load an example observation (frame) and template image
-    observation = cv2.imread("test_image5.png")
-    observation2 = cv2.imread("test_image6.png")
+    # Load example observations (frames) and template image
+    observations = [
+        cv2.imread("test_images/test_image5.png"),        
+        cv2.imread("test_images/test_image6.png")
+    ]
+    observations2 = [
+        cv2.imread("test_images/test_image7.png"),
+        cv2.imread("test_images/test_image8.png"),
+        cv2.imread("test_images/test_image9.png"),
+        cv2.imread("test_images/test_image10.png"),
+        cv2.imread("test_images/test_image11.png")
+    ]
+    
     template = cv2.imread("swirly.png")
     
     # Initialize previous swirlies list
     prev_swirlies = []
     
-    # Track swirlies in the first observation
-    reward, current_swirlies, collected_swirlies = track_swirlies(observation, template, prev_swirlies)
-    print(f"Reward: {reward}")
-    print(f"Collected Swirlies: {collected_swirlies}")
-    
-    # Update previous swirlies list
-    prev_swirlies = current_swirlies
-    
-    # Track swirlies in the second observation
-    reward, current_swirlies, collected_swirlies = track_swirlies(observation2, template, prev_swirlies)
-    print(f"Reward: {reward}")
-    print(f"Collected Swirlies: {collected_swirlies}")
-    
-    # Update previous swirlies list
-    prev_swirlies = current_swirlies
+    # Loop through each observation and track swirlies
+    for i, observation in enumerate(observations):
+        reward, current_swirlies, collected_swirlies = track_swirlies(observation, template, prev_swirlies)
+        print(f"Observation {i+1}:")
+        print(f"Reward: {reward}")
+        print(f"Collected Swirlies: {collected_swirlies}")
+        
+        # Update previous swirlies list
+        prev_swirlies = current_swirlies
