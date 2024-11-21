@@ -7,6 +7,7 @@ from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 import traceback
 import json
+from track_swirlies import track_swirlies
 
 config_file = "game_config.json"
 with open(config_file, 'r') as file:
@@ -20,6 +21,9 @@ class FPAGame(Env):
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
         self.prev_observation = None  # Initialize prev_observation
+        self.prev_swirlies = []  # Initialize prev_swirlies
+        self.template = cv2.imread("swirly.png")
+
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -60,6 +64,22 @@ class FPAGame(Env):
         # Update previous observation
         self.prev_observation = new_observation
 
+        with mss.mss() as sct:
+            monitor = {
+                "top": self.game_location['top'],
+                "left": self.game_location['left'],
+                "width": self.game_location['width'],
+                "height": self.game_location['height']
+            }
+            # Capture the game region
+            screenshot = sct.grab(monitor)
+            # Convert to numpy array to fetch pixel data
+            frame = np.array(screenshot)[:, :, :3]
+
+        # Detect swirlies
+        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(frame, self.template, self.prev_swirlies)
+        prev_swirlies = current_swirlies
+
         # Determine reward
         reward = 10 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
         if self.get_done():
@@ -67,6 +87,9 @@ class FPAGame(Env):
             done = True
         else:
             done = False
+
+        reward = reward + 10 * collected_swirlies  # Reward for collecting swirlies
+        print("tacos", collected_swirlies)
 
         return new_observation, reward, done, {}
 

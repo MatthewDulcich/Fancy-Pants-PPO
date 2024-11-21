@@ -16,6 +16,9 @@ def track_swirlies(observation, template, prev_swirlies):
         current_swirlies (list): List of positions of swirlies in the current frame.
         collected_swirlies (int): Number of swirlies collected.
     """
+    # Ensure observation is a valid NumPy array
+    observation = np.array(observation, dtype=np.uint8)
+    
     # Convert the observation to grayscale
     gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
     
@@ -93,7 +96,6 @@ def track_swirlies(observation, template, prev_swirlies):
         if overlap_ratio >= 0.25:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
             cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
-            # num_swirlies += 10  # Assign a num_swirlies for each swirly detected on screen
             print(f"Swirly on screen at: {pt}")
         else:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
@@ -122,7 +124,7 @@ def track_swirlies(observation, template, prev_swirlies):
     
     # Display the observation with detected swirlies (for visualization)
     cv2.imshow("Detected Swirlies", observation)
-    cv2.waitKey(0)  # Wait indefinitely until a key is pressed
+    # cv2.waitKey(0)  # Wait indefinitely until a key is pressed
     cv2.destroyAllWindows()
     
     return num_swirlies, current_swirlies, collected_swirlies
