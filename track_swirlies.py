@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-def track_swirlies(observation, template, prev_swirlies):
+def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False):
     """
     Tracks swirlies in the given observation using template matching.
     
@@ -10,6 +10,7 @@ def track_swirlies(observation, template, prev_swirlies):
         observation (numpy.ndarray): The current frame of the game.
         template (numpy.ndarray): The template image of the swirly to match.
         prev_swirlies (list): List of positions of swirlies in the previous frame.
+        print_to_terminal (bool): Flag to control printing to the terminal.
     
     Returns:
         num_swirlies (int): The num_swirlies based on the presence of swirlies.
@@ -50,8 +51,9 @@ def track_swirlies(observation, template, prev_swirlies):
         int(observation.shape[0] * (1 - margin - 0.05))  # bottom
     )
     
-    # Draw the frame rectangle (for visualization)
-    cv2.rectangle(observation, (frame_rect[0], frame_rect[1]), (frame_rect[2], frame_rect[3]), (255, 0, 0), 2)
+    if print_to_terminal:
+        # Draw the frame rectangle (for visualization)
+        cv2.rectangle(observation, (frame_rect[0], frame_rect[1]), (frame_rect[2], frame_rect[3]), (255, 0, 0), 2)
     
     # Prepare bounding boxes and confidence scores for NMS
     boxes = []
@@ -95,12 +97,14 @@ def track_swirlies(observation, template, prev_swirlies):
         # Check if the swirly is within the frame rectangle
         if overlap_ratio >= 0.25:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
-            cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
-            print(f"Swirly on screen at: {pt}")
+            if print_to_terminal:
+                cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
+                print(f"Swirly on screen at: {pt}")
         else:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
-            cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 0, 255), 2)
-            print(f"Swirly off screen at: {pt}")
+            if print_to_terminal:
+                cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 0, 255), 2)
+                print(f"Swirly off screen at: {pt}")
     
     # Calculate collected swirlies using the Hungarian algorithm
     if prev_swirlies:
@@ -119,8 +123,9 @@ def track_swirlies(observation, template, prev_swirlies):
     
     num_swirlies = collected_swirlies * 10  # Assign a num_swirlies for each swirly collected
     # Print the number of swirlies detected
-    print(f"Number of swirlies detected: {len(indices)}")
-    print(f"Number of swirlies collected: {collected_swirlies}")
+    if print_to_terminal:
+        print(f"Number of swirlies detected: {len(indices)}")
+        print(f"Number of swirlies collected: {collected_swirlies}")
     
     # Display the observation with detected swirlies (for visualization)
     cv2.imshow("Detected Swirlies", observation)
@@ -151,7 +156,7 @@ if __name__ == "__main__":
     
     # Loop through each observation and track swirlies
     for i, observation in enumerate(observations):
-        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(observation, template, prev_swirlies)
+        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(observation, template, prev_swirlies, print_to_terminal=True)
         print(f"Observation {i+1}:")
         print(f"num_swirlies: {num_swirlies}")
         print(f"Collected Swirlies: {collected_swirlies}")
