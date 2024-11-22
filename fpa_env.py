@@ -82,7 +82,7 @@ class FPAGame(Env):
 
         # Calculate frame difference
         frame_diff = np.mean(np.abs(self.prev_observation - new_observation))
-        print(f"Frame difference after action {action}: {frame_diff:.2f}")
+        # print(f"Frame difference after action {action}: {frame_diff:.2f}")
 
         # Update previous observation
         self.prev_observation = new_observation
@@ -90,15 +90,15 @@ class FPAGame(Env):
         # Determine reward
         reward = 1 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
         if self.get_done():
-            print(f"Reward received for completing the level: {reward}")
+            # print(f"Reward received for completing the level: {reward}")
             reward = 100
             done = True
         else:
             done = False
 
         siwrlie_reward = reward + 10 * collected_swirlies  # Reward for collecting swirlies
-        print("Swirlies collected:", collected_swirlies)
-        print(f"Swirlie reward: {siwrlie_reward}")
+        # print("Swirlies collected:", collected_swirlies)
+        # print(f"Swirlie reward: {siwrlie_reward}")
 
         # store relevant info in info dict
         info = {
@@ -128,7 +128,7 @@ class FPAGame(Env):
         
         # Re-enter the game
         safari_window = enter_game.get_most_recent_window_by_owner("Safari")
-        enter_game.enter_game(safari_window)
+        enter_game.enter_game(safari_window, pre_loaded=True)
         
         # Reinitialize observation
         self.prev_observation = self.get_observation()

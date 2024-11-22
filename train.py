@@ -1,6 +1,6 @@
+import logging
 import traceback
 import cv2
-import matplotlib.pyplot as plt
 import random
 import time
 import json
@@ -11,16 +11,27 @@ import launch_fpa_game
 import game_env_setup
 import enter_game
 import safari_operations
-# import mute_safari_tab
 
+# Load configuration
 config_file = "game_config.json"
 with open(config_file, 'r') as file:
-        config = json.load(file)
+    config = json.load(file)
+
+logging.basicConfig(
+    filename="game_training.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    filemode='w',  # Overwrite logs for each run
+    force=True  # Force configuration even if logging is already set
+)
+
+# Add this explicitly after setting up logging:
+logging.getLogger().handlers[0].flush()
 
 def main():
     """
-    Main function to set up the environment, enter the tutorial level, and capture observations
-    while performing 10 random actions.
+    Main function to set up the environment, enter the tutorial level, and run training
+    with timeout-based resets.
     """
     server_process = None
     safari_process = None
@@ -28,30 +39,26 @@ def main():
 
     try:
         # Step 1: Ensure the port is free and start the Ruffle server
-        print("Cleaning up the port and starting Ruffle server...")
-        launch_fpa_game.kill_port(config['PORT'])  # Ensure the port is available
+        logging.info("Starting Ruffle server...")
+        launch_fpa_game.kill_port(config['PORT'])
         server_process = game_env_setup.start_ruffle_host(config['PORT'])
 
         # Step 2: Launch the game in Safari
-        print("Launching the game in Safari...")
+        logging.info("Launching the game in Safari...")
         safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
 
         # Step 3: Automate entering the tutorial level
-        print("Automating game entry to reach the tutorial level...")
+        logging.info("Automating game entry...")
         safari_window = enter_game.get_most_recent_window_by_owner("Safari")
         if not safari_window:
-            raise Exception("No Safari window found. Exiting...")
-        
-        # mute_safari_tab.mute_specific_tab(driver)  # Mute the game tab
-
-        enter_game.enter_game(safari_window, pre_loaded=True)  # Navigate to the tutorial level
+            raise RuntimeError("No Safari window found. Exiting.")
+        enter_game.enter_game(safari_window, pre_loaded=True)
 
         # Step 4: Fetch canvas information and content offset
-        print("Fetching game canvas size and position...")
-        # canvas_info = game_env_setup.fetch_canvas_position_and_size(driver)
+        logging.info("Fetching game canvas position and size...")
         canvas_info = {'top': 0, 'left': 0, 'width': 550, 'height': 400}
         if not canvas_info:
-            raise Exception("Failed to fetch canvas info. Exiting...")
+            raise ValueError("Failed to fetch canvas info. Exiting.")
 
         game_location = {
             'top': int(canvas_info['top']),
@@ -59,77 +66,94 @@ def main():
             'width': int(canvas_info['width']),
             'height': int(canvas_info['height']),
         }
-        print("Game Location (Canvas Info):", game_location)
+        logging.info(f"Game Location: {game_location}")
 
-        # Fetch content offset and adjust the game location
-        print("Fetching content offset for browser adjustments...")
+        # Adjust game location
         safari_coords = safari_operations.get_safari_window_coordinates()
         if not safari_coords:
-            raise Exception("Failed to fetch Safari window coordinates. Exiting...")
+            raise RuntimeError("Failed to fetch Safari window coordinates. Exiting.")
         adjusted_game_location = {
-            'top': game_location['top'] + safari_coords['top'] + 60,  # Adjust for menu bar
+            'top': game_location['top'] + safari_coords['top'] + 60,
             'left': game_location['left'] + safari_coords['left'],
             'width': game_location['width'],
             'height': game_location['height'],
         }
-        print("Adjusted Game Location:", adjusted_game_location)
+        logging.info(f"Adjusted Game Location: {adjusted_game_location}")
 
-        # Step 5: Initialize the FPAGame environment
-        print("Initializing FPAGame environment...")
+        # Step 5: Initialize FPAGame environment
+        logging.info("Initializing FPAGame environment...")
         env = FPAGame(adjusted_game_location, safari_process=safari_process, server_process=server_process)
 
-        # Step 6: Capture initial observation to verify setup
-        print("Capturing initial observation from the game...")
-        obs = env.get_observation()
-
-        # Step 7: Run random actions with a timeout
-        print("Running actions with timeout-based reset...")
-        timeout = config['timeout_mins'] * 60  # 2 minutes timeout for each episode
-        start_time = time.time()  # Track start time of the episode
-        reward_sum = 0  # Track the total reward for the episode
-        rewards_tracker = []  # Track rewards for plotting
-
-        # create a log txt file
-        log_file = open("log.txt", "w")
+        # Step 6: Run actions with timeout-based resets
+        logging.info("Starting training with timeout-based reset...")
+        timeout = config['timeout_mins'] * 60
+        start_time = time.time()
+        reward_sum = 0
+        episode_rewards = []  # Track rewards for the current episode
+        episode_count = 1
 
         while True:
             # Check for timeout
             if time.time() - start_time > timeout:
-                print("Timeout reached! Resetting the environment...")
-                obs = env.reset()  # Reset the environment
-                start_time = time.time()  # Restart the timer
-                continue  # Start the next episode
+                print(100 * "-")
+                logging.info(f"Timeout reached for Episode {episode_count}. Resetting environment...")
+                obs = env.reset()
+                logging.info(f"Episode {episode_count} Summary: Total Reward = {reward_sum}, Steps = {len(episode_rewards)}")
+                episode_count += 1
+                reward_sum = 0
+                episode_rewards = []
+                start_time = time.time()  # Restart timer
+                continue
 
             # Perform a random action
-            action = random.randint(0, 4)
+            action = random.randint(0, env.action_space.n - 1)
             obs, reward, done, info = env.step(action)
 
-            # Save observation locally
-            cv2.imwrite(f"step_{int(time.time() - start_time)}.png", obs[0])
-
-            # Track rewards for plotting
-            rewards_tracker.append(reward_sum)
+            # Update rewards
             reward_sum += reward
-            log_file.write(f"Action = {action}, Reward = {reward}, Done = {done}\n")
-            log_file.write(f"Total Reward: {reward_sum}\n")
-            log_file.write(50 * "-")
-            log_file.flush()  # Ensure the log is written to the file
-            
+            episode_rewards.append(reward)
+
+            # Log each action
+            logging.info(
+                f"Action = {action}, Reward = {reward}, Total Reward = {reward_sum}, Done = {done}"
+            )
+
+            # Save observation (optional, for debugging)
+            # cv2.imwrite(f"step_{int(time.time() - start_time)}.png", obs[0])
+
             # End the episode if the level is finished
             if done:
-                print("Finished the level! Resetting the environment...")
+                logging.info(f"Level finished in Episode {episode_count}. Resetting environment...")
+                logging.info(f"Episode {episode_count} Summary: Total Reward = {reward_sum}, Steps = {len(episode_rewards)}")
                 obs = env.reset()
-                start_time = time.time()  # Restart the timer
+                episode_count += 1
+                reward_sum = 0
+                episode_rewards = []
+                start_time = time.time()  # Restart timer
 
     except Exception as e:
-        print("An error occurred:", e)
+        logging.error(f"An error occurred: {e}")
         traceback.print_exc()
 
+    finally:
+        # Cleanup resources
+        if env:
+            env.cleanup_resources(server_process, safari_process)
+        elif server_process and safari_process:
+            game_env_setup.cleanup(server_process, safari_process)
+        logging.info("All processes terminated successfully. Exiting.")
+    
+    return env, server_process, safari_process
+
+if __name__ == "__main__":
+    try:
+        env, server_process, safari_process = main()
+    except KeyboardInterrupt:
+        print("\nExecution interrupted by user. Cleaning up resources...")
+        logging.info("Execution interrupted by user. Cleaning up resources...")
     finally:
         if env:
             env.cleanup_resources(server_process, safari_process)
         elif server_process and safari_process:
             game_env_setup.cleanup(server_process, safari_process)
-
-if __name__ == "__main__":
-    main()
+        logging.info("All processes terminated successfully. Exiting.")

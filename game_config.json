@@ -6,5 +6,5 @@
         "width": 200,
         "height": 150
     },
-    "timeout_mins": 1
+    "timeout_mins": 0.2
 }
