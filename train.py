@@ -2,6 +2,7 @@ import traceback
 import cv2
 import matplotlib.pyplot as plt
 import random
+import time
 import json
 
 # Import helper functions from other scripts
@@ -75,28 +76,46 @@ def main():
 
         # Step 5: Initialize the FPAGame environment
         print("Initializing FPAGame environment...")
-        env = FPAGame(adjusted_game_location)
+        env = FPAGame(adjusted_game_location, safari_process=safari_process, server_process=server_process)
 
         # Step 6: Capture initial observation to verify setup
         print("Capturing initial observation from the game...")
         obs = env.get_observation()
 
-        # Step 7: Run 10 random actions
-        print("Running 10 random actions in the environment...")
-        rewards = 0
-        for i in range(10):
-            action = random.randint(0, env.action_space.n - 1)  # Random action
+        # Step 7: Run random actions with a timeout
+        print("Running actions with timeout-based reset...")
+        timeout = config['timeout_mins'] * 60  # 2 minutes timeout for each episode
+        start_time = time.time()  # Track start time of the episode
+        reward_sum = 0  # Track the total reward for the episode
+        rewards_tracker = []  # Track rewards for plotting
+
+        while True:
+            # Check for timeout
+            if time.time() - start_time > timeout:
+                print("Timeout reached! Resetting the environment...")
+                obs = env.reset()  # Reset the environment
+                start_time = time.time()  # Restart the timer
+                continue  # Start the next episode
+
+            # Perform a random action
+            action = random.randint(0, 4)
             obs, reward, done, info = env.step(action)
-            rewards += reward
-            print(500 * "-")
-            print(f"Step {i+1}: Action = {action}, Reward = {rewards}, Done = {done}")
+            print(50 * "-")
+            print(f"Action = {action}, Reward = {reward}, Done = {done}")
 
-            # save image locally
-            cv2.imwrite(f"step_{i+1}.png", obs[0])
+            # Save observation locally
+            cv2.imwrite(f"step_{int(time.time() - start_time)}.png", obs[0])
 
+            # Track rewards for plotting
+            reward_sum += reward
+            print(f"Total Reward: {reward_sum}")
+            rewards_tracker.append(reward_sum)
+            
+            # End the episode if the level is finished
             if done:
-                print("Finished the level!")
-                break
+                print("Finished the level! Resetting the environment...")
+                obs = env.reset()
+                start_time = time.time()  # Restart the timer
 
     except Exception as e:
         print("An error occurred:", e)

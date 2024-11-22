@@ -1,20 +1,25 @@
+# Library imports
 import numpy as np
 import pyautogui
-import time
 import mss
 import cv2
-from gymnasium import Env
-from gymnasium.spaces import Box, Discrete
 import traceback
 import json
+from gymnasium import Env
+from gymnasium.spaces import Box, Discrete
+
+# Script imports
 from track_swirlies import track_swirlies
+import game_env_setup
+import enter_game
+import launch_fpa_game
 
 config_file = "game_config.json"
 with open(config_file, 'r') as file:
         config = json.load(file)
 
 class FPAGame(Env):
-    def __init__(self, game_location):
+    def __init__(self, game_location, server_process=None, safari_process=None):
         super().__init__()
         self.observation_space = Box(low=0, high=255, shape=(1, 400, 800), dtype=np.uint8)
         self.action_space = Discrete(5)  # Number of actions
@@ -23,6 +28,8 @@ class FPAGame(Env):
         self.prev_observation = None  # Initialize prev_observation
         self.prev_swirlies = []  # Initialize prev_swirlies
         self.template = cv2.imread("swirly.png")
+        self.server_process = server_process  # Add server process
+        self.safari_process = safari_process  # Add Safari process
 
 
     # Helper function to toggle key presses
@@ -81,7 +88,7 @@ class FPAGame(Env):
         self.prev_observation = new_observation
 
         # Determine reward
-        reward = 10 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
+        reward = 1 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
         if self.get_done():
             print(f"Reward received for completing the level: {reward}")
             reward = 100
@@ -95,19 +102,24 @@ class FPAGame(Env):
 
         return new_observation, reward, done, {}
 
-    # Reset the environment
     def reset(self):
         """
-        Reset the environment and return the initial observation.
+        Reset the environment by restarting the Ruffle server and Safari process.
         """
-        print("Resetting the environment...")
-
-        # Simulate pressing a reset key (e.g., restart game)
-        pyautogui.press('r')  # Replace with the appropriate reset command
-        time.sleep(2)  # Allow time for the reset
-
-        # Capture the initial observation
-        self.prev_observation = self.get_observation()  # Initialize prev_observation
+        print("Resetting the game by restarting Ruffle and Safari...")
+        # Stop existing processes
+        self.cleanup_resources(self.server_process, self.safari_process)
+        
+        # Restart Ruffle host and Safari
+        self.server_process = launch_fpa_game.start_ruffle_host(config['PORT'])
+        self.safari_process, self.driver = game_env_setup.launch_safari_host(config['GAME_URL'])
+        
+        # Re-enter the game
+        safari_window = enter_game.get_most_recent_window_by_owner("Safari")
+        enter_game.enter_game(safari_window)
+        
+        # Reinitialize observation
+        self.prev_observation = self.get_observation()
         return self.prev_observation
     
     # Visualize the game (get observation)
@@ -117,6 +129,7 @@ class FPAGame(Env):
     # Close the observation (closes render)
     def close(self):
         pass
+    
     # Get the game window
     def get_observation(self):
         with mss.mss() as sct:

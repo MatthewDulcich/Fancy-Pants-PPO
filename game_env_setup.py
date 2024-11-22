@@ -24,27 +24,6 @@ def start_ruffle_host(port=8000):
     print("Ruffle host server started.")
     return server_process
 
-
-def start_safari_webdriver(game_url):
-    """
-    Starts Safari WebDriver and opens the game URL, returning the process and WebDriver.
-    """
-    from selenium import webdriver
-    from selenium.webdriver.safari.options import Options
-
-    print("Starting Safari WebDriver...")
-    safari_process = subprocess.Popen(["safaridriver", "-p", "4444"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    time.sleep(3)
-    print("Safari WebDriver started.")
-
-    safari_options = Options()
-    safari_options.set_capability("browserName", "safari")
-    driver = webdriver.Remote(command_executor="http://localhost:4444", options=safari_options)
-    print("Opening the game URL...")
-    driver.get(game_url)
-    time.sleep(5)
-    return safari_process, driver
-
 # Launch safari host given the game url
 def launch_safari_host(game_url):
     """
