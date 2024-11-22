@@ -1,4 +1,4 @@
-from game_env_setup import start_ruffle_host, start_safari_webdriver, cleanup
+from game_env_setup import start_ruffle_host, launch_safari_host, cleanup
 import json
 
 config_file = "game_config.json"
@@ -28,7 +28,7 @@ def kill_port(port):
 if __name__ == "__main__":
     # Start the Ruffle host server and Safari WebDriver
     server_process = start_ruffle_host()
-    safari_process, driver = start_safari_webdriver(config_file['GAME_URL'])
+    safari_process = launch_safari_host(config['GAME_URL'])
 
     # If keyboard Interrupt occurs, cleanup the processes
     try:
