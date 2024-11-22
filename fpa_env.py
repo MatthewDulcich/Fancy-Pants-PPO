@@ -100,7 +100,19 @@ class FPAGame(Env):
         print("Swirlies collected:", collected_swirlies)
         print(f"Swirlie reward: {siwrlie_reward}")
 
-        return new_observation, reward, done, {}
+        # store relevant info in info dict
+        info = {
+            "num_swirlies": num_swirlies,
+            "collected_swirlies": collected_swirlies,
+            "swirlie_reward": siwrlie_reward,
+            "frame_diff": frame_diff,
+            "done": done,
+            "reward": reward,
+            "action": action,
+            "reward_sum": reward
+        }
+
+        return new_observation, reward, done, info
 
     def reset(self):
         """
@@ -112,7 +124,7 @@ class FPAGame(Env):
         
         # Restart Ruffle host and Safari
         self.server_process = launch_fpa_game.start_ruffle_host(config['PORT'])
-        self.safari_process, self.driver = game_env_setup.launch_safari_host(config['GAME_URL'])
+        self.safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
         
         # Re-enter the game
         safari_window = enter_game.get_most_recent_window_by_owner("Safari")

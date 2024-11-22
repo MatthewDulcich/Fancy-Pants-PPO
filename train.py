@@ -89,6 +89,9 @@ def main():
         reward_sum = 0  # Track the total reward for the episode
         rewards_tracker = []  # Track rewards for plotting
 
+        # create a log txt file
+        log_file = open("log.txt", "w")
+
         while True:
             # Check for timeout
             if time.time() - start_time > timeout:
@@ -100,16 +103,17 @@ def main():
             # Perform a random action
             action = random.randint(0, 4)
             obs, reward, done, info = env.step(action)
-            print(50 * "-")
-            print(f"Action = {action}, Reward = {reward}, Done = {done}")
 
             # Save observation locally
             cv2.imwrite(f"step_{int(time.time() - start_time)}.png", obs[0])
 
             # Track rewards for plotting
-            reward_sum += reward
-            print(f"Total Reward: {reward_sum}")
             rewards_tracker.append(reward_sum)
+            reward_sum += reward
+            log_file.write(f"Action = {action}, Reward = {reward}, Done = {done}\n")
+            log_file.write(f"Total Reward: {reward_sum}\n")
+            log_file.write(50 * "-")
+            log_file.flush()  # Ensure the log is written to the file
             
             # End the episode if the level is finished
             if done:
