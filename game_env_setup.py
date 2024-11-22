@@ -3,12 +3,10 @@ import time
 import mss
 import numpy as np
 import json
+import config_handler
 
-# --- Game Environment Constants ---
-
-config_file = "game_config.json"
-with open(config_file, 'r') as file:
-        config = json.load(file)
+# Load configuration
+config = config_handler.load_config("game_config.json")
 
 # --- Game Environment Functions ---
 

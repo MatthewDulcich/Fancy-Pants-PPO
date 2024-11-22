@@ -11,11 +11,10 @@ import launch_fpa_game
 import game_env_setup
 import enter_game
 import safari_operations
+import config_handler
 
 # Load configuration
-config_file = "game_config.json"
-with open(config_file, 'r') as file:
-    config = json.load(file)
+config = config_handler.load_config("game_config.json")
 
 logging.basicConfig(
     filename="game_training.log",
@@ -146,6 +145,9 @@ def main():
     return env, server_process, safari_process
 
 if __name__ == "__main__":
+    env = None
+    server_process = None
+    safari_process = None
     try:
         env, server_process, safari_process = main()
     except KeyboardInterrupt:

@@ -1,9 +1,9 @@
 from game_env_setup import start_ruffle_host, launch_safari_host, cleanup
+import config_handler
 import json
 
-config_file = "game_config.json"
-with open(config_file, 'r') as file:
-        config = json.load(file)
+# Load configuration
+config = config_handler.load_config("game_config.json")
 
 # function to kill the port
 def kill_port(port):

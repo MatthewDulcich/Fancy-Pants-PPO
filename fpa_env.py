@@ -13,10 +13,10 @@ from track_swirlies import track_swirlies
 import game_env_setup
 import enter_game
 import launch_fpa_game
+import config_handler
 
-config_file = "game_config.json"
-with open(config_file, 'r') as file:
-        config = json.load(file)
+# Load configuration
+config = config_handler.load_config("game_config.json")
 
 class FPAGame(Env):
     def __init__(self, game_location, server_process=None, safari_process=None):
