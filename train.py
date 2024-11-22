@@ -88,6 +88,7 @@ def main():
             action = random.randint(0, env.action_space.n - 1)  # Random action
             obs, reward, done, info = env.step(action)
             rewards += reward
+            print(500 * "-")
             print(f"Step {i+1}: Action = {action}, Reward = {rewards}, Done = {done}")
 
             # save image locally

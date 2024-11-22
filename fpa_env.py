@@ -57,13 +57,6 @@ class FPAGame(Env):
         if self.prev_observation is None:
             self.prev_observation = new_observation
 
-        # Calculate frame difference
-        frame_diff = np.mean(np.abs(self.prev_observation - new_observation))
-        print(f"Frame difference after action {action}: {frame_diff}")
-
-        # Update previous observation
-        self.prev_observation = new_observation
-
         with mss.mss() as sct:
             monitor = {
                 "top": self.game_location['top'],
@@ -80,16 +73,25 @@ class FPAGame(Env):
         num_swirlies, current_swirlies, collected_swirlies = track_swirlies(frame, self.template, self.prev_swirlies)
         prev_swirlies = current_swirlies
 
+        # Calculate frame difference
+        frame_diff = np.mean(np.abs(self.prev_observation - new_observation))
+        print(f"Frame difference after action {action}: {frame_diff:.2f}")
+
+        # Update previous observation
+        self.prev_observation = new_observation
+
         # Determine reward
         reward = 10 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
         if self.get_done():
+            print(f"Reward received for completing the level: {reward}")
             reward = 100
             done = True
         else:
             done = False
 
-        reward = reward + 10 * collected_swirlies  # Reward for collecting swirlies
-        print("tacos", collected_swirlies)
+        siwrlie_reward = reward + 10 * collected_swirlies  # Reward for collecting swirlies
+        print("Swirlies collected:", collected_swirlies)
+        print(f"Swirlie reward: {siwrlie_reward}")
 
         return new_observation, reward, done, {}
 
