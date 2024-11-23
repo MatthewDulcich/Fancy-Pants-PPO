@@ -118,7 +118,7 @@ def main():
             )
 
             # Save observation (optional, for debugging)
-            # cv2.imwrite(f"step_{int(time.time() - start_time)}.png", obs[0])
+            cv2.imwrite(f"step_{int(time.time() - start_time)}.png", obs[0])
 
             # End the episode if the level is finished
             if done:
