@@ -95,13 +95,8 @@ def main():
             # Check for timeout
             if time.time() - start_time > timeout:
                 print(100 * "-")
-                logging.info(f"Timeout reached for Episode {episode_count}. Resetting environment...")
-                obs = env.reset()
-                logging.info(f"Episode {episode_count} Summary: Total Reward = {reward_sum}, Steps = {len(episode_rewards)}")
-                episode_count += 1
-                reward_sum = 0
-                episode_rewards = []
-                start_time = time.time()  # Restart timer
+                logging.info(f"Timeout or episode complete for Episode {episode_count}. Resetting environment...")
+                obs, reward_sum, episode_rewards, episode_count, start_time = game_env_setup.reset_episode(env, reward_sum, episode_rewards, episode_count)
                 continue
 
             # Perform a random action
@@ -118,7 +113,12 @@ def main():
             )
 
             # Save observation (optional, for debugging)
-            cv2.imwrite(f"step_{int(time.time() - start_time)}.png", obs[0])
+            if config.get("save_images", False) and (done or reward != 0 or len(episode_rewards) % 10 == 0):
+                cv2.imwrite(
+                    f"episode_{episode_count}_step_{len(episode_rewards)}.png",
+                    obs[0],
+                    [int(cv2.IMWRITE_PNG_COMPRESSION), 7]
+                )
 
             # End the episode if the level is finished
             if done:

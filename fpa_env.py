@@ -108,21 +108,45 @@ class FPAGame(Env):
         """
         Reset the environment by restarting the Ruffle server and Safari process.
         """
-        print("Resetting the game by restarting Ruffle and Safari...")
-        # Stop existing processes
-        self.cleanup_resources(self.server_process, self.safari_process)
-        
-        # Restart Ruffle host and Safari
-        self.server_process = launch_fpa_game.start_ruffle_host(config['PORT'])
-        self.safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
-        
-        # Re-enter the game
-        safari_window = enter_game.get_most_recent_window_by_owner("Safari")
-        enter_game.enter_game(safari_window, pre_loaded=True)
-        
-        # Reinitialize observation
-        self.prev_observation = self.get_observation()
-        return self.prev_observation
+        try:
+
+            # Stop existing processes safely
+            self.cleanup_resources(self.server_process, self.safari_process)
+
+            # Restart Ruffle server and Safari browser
+            self.server_process, self.safari_process = self._restart_processes()
+
+            # Navigate to the game level
+            safari_window = enter_game.get_most_recent_window_by_owner("Safari")
+            if not safari_window:
+                raise RuntimeError("Failed to detect Safari window during reset.")
+
+            enter_game.enter_game(safari_window, pre_loaded=True)
+
+            # Reinitialize observation
+            self.prev_observation = self.get_observation()
+            return self.prev_observation
+
+        except Exception as e:
+            traceback.print_exc()
+            raise
+
+    def _restart_processes(self):
+        """
+        Helper method to restart the Ruffle server and Safari process.
+        """
+        try:
+            # Restart Ruffle server
+            server_process = launch_fpa_game.start_ruffle_host(config['PORT'])
+
+            # Restart Safari browser
+            safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
+
+            return server_process, safari_process
+
+        except Exception as e:
+            traceback.print_exc()
+            raise
     
     # Visualize the game (get observation)
     def render(self):
@@ -134,35 +158,44 @@ class FPAGame(Env):
     
     # Get the game window
     def get_observation(self):
-        with mss.mss() as sct:
-            monitor = {
-                "top": self.game_location['top'],
-                "left": self.game_location['left'],
-                "width": self.game_location['width'],
-                "height": self.game_location['height']
-            }
-            # Capture the game region
-            screenshot = sct.grab(monitor)
-            # Convert to numpy array to fetch pixel data
-            frame = np.array(screenshot)[:, :, :3]
-            # Convert to grayscale
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
-            # Downscale (smaller resolution for faster computation)
-            downscaled_frame = cv2.resize(gray_frame, (config['down_scaled']['width'], config['down_scaled']['height']))
-            # Add channel dimension for compatibility
-            observation = np.expand_dims(downscaled_frame, axis=0)
-            return observation
+        monitor = {
+            "top": self.game_location['top'],
+            "left": self.game_location['left'],
+            "width": self.game_location['width'],
+            "height": self.game_location['height']
+        }
+
+        # Capture the game region using persistent mss context
+        screenshot = self.sct.grab(monitor)
+
+        # Convert to numpy array and keep only the grayscale channel
+        frame = np.array(screenshot, dtype=np.uint8)[:, :, 0]  # Use only one channel for grayscale
+        
+        # Downscale the frame directly without explicit grayscale conversion
+        downscaled_frame = cv2.resize(
+            frame, 
+            (config['down_scaled']['width'], config['down_scaled']['height']), 
+            interpolation=cv2.INTER_NEAREST
+        )
+
+        # Add channel dimension for compatibility
+        observation = np.expand_dims(downscaled_frame, axis=0)
+
+        return observation
         
     def get_done(self):
         """
         Check if the screen is black (end of level).
         """
+        # Directly capture observation
         observation = self.get_observation()
-        # Calculate the average pixel intensity
-        avg_intensity = np.mean(observation)
-        # Set a threshold for detecting a black screen
-        black_screen_threshold = 10  # Fine-tune this value based on testing
-        return avg_intensity < black_screen_threshold
+
+        # Use numpy operations to calculate average intensity
+        avg_intensity = observation.mean()  # More efficient than np.mean(observation)
+
+        # Optimize threshold comparison
+        is_black_screen = avg_intensity < 10  # Fine-tune threshold as needed
+        return is_black_screen
 
     def cleanup_resources(self, server_process, safari_process):
         """
@@ -170,13 +203,27 @@ class FPAGame(Env):
         """
         try:
             print("Cleaning up resources...")
+            
+            # Safely terminate the Ruffle server process
             if server_process:
-                server_process.terminate()
-                server_process.wait()
+                if server_process.poll() is None:  # Check if process is still running
+                    server_process.terminate()
+                    server_process.wait()
+                    print("Ruffle server process terminated.")
+                else:
+                    print("Ruffle server process already terminated.")
+            
+            # Safely terminate the Safari process
             if safari_process:
-                safari_process.terminate()
-                safari_process.wait()
+                if safari_process.poll() is None:  # Check if process is still running
+                    safari_process.terminate()
+                    safari_process.wait()
+                    print("Safari process terminated.")
+                else:
+                    print("Safari process already terminated.")
+            
             print("All processes terminated successfully.")
+        
         except Exception as e:
             print("An error occurred during cleanup:", e)
             traceback.print_exc()
