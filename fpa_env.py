@@ -57,6 +57,7 @@ class FPAGame(Env):
         if self.prev_observation is None:
             self.prev_observation = new_observation
 
+        # TODO: Get game observation that is not downscaled
         with mss.mss() as sct:
             monitor = {
                 "top": self.game_location['top'],
