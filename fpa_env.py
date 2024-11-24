@@ -110,10 +110,12 @@ class FPAGame(Env):
         self.prev_observation = self.get_observation()  # Initialize prev_observation
         return self.prev_observation
     
+    # Not used in this implementation
     # Visualize the game (get observation)
     def render(self):
         pass
-
+    
+    # Not used in this implementation
     # Close the observation (closes render)
     def close(self):
         pass

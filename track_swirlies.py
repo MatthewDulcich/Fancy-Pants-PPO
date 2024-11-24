@@ -129,7 +129,7 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
     
         # Display the observation with detected swirlies (for visualization)
         cv2.imshow("Detected Swirlies", observation)
-        # cv2.waitKey(0)  # Wait indefinitely until a key is pressed
+        cv2.waitKey(0)  # Wait indefinitely until a key is pressed
         cv2.destroyAllWindows()
     
     return num_swirlies, current_swirlies, collected_swirlies
