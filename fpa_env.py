@@ -82,7 +82,7 @@ class FPAGame(Env):
         self.prev_observation = new_observation
 
         # Determine reward
-        reward = 10 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
+        reward = 1 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
         if self.get_done():
             print(f"Reward received for completing the level: {reward}")
             reward = 100
@@ -90,9 +90,9 @@ class FPAGame(Env):
         else:
             done = False
 
-        siwrlie_reward = reward + 10 * collected_swirlies  # Reward for collecting swirlies
+        reward += 10 * collected_swirlies  # Reward for collecting swirlies
         print("Swirlies collected:", collected_swirlies)
-        print(f"Swirlie reward: {siwrlie_reward}")
+        print(f"Swirlie reward: {reward}")
 
         return new_observation, reward, done, {}
 
