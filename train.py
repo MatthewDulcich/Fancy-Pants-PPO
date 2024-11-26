@@ -4,6 +4,7 @@ import cv2
 import random
 import time
 import json
+import os
 
 # Import helper functions from other scripts
 from fpa_env import FPAGame
@@ -16,14 +17,18 @@ import config_handler
 # Load configuration
 config = config_handler.load_config("game_config.json")
 
+# Ensure the logs directory exists
+log_dir = os.path.join(os.getcwd(), 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
+# Configure logging
 logging.basicConfig(
-    filename="game_training.log",
+    filename=os.path.join(log_dir, 'training.log'),
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     filemode='w',  # Overwrite logs for each run
     force=True  # Force configuration even if logging is already set
 )
-
 # Add this explicitly after setting up logging:
 logging.getLogger().handlers[0].flush()
 
@@ -95,6 +100,7 @@ def main():
             # Check for timeout
             if time.time() - start_time > timeout:
                 print(100 * "-")
+                logging.info(100 * "-")
                 logging.info(f"Timeout or episode complete for Episode {episode_count}. Resetting environment...")
                 obs, reward_sum, episode_rewards, episode_count, start_time = game_env_setup.reset_episode(env, reward_sum, episode_rewards, episode_count)
                 continue
@@ -103,14 +109,12 @@ def main():
             action = random.randint(0, env.action_space.n - 1)
             obs, reward, done, info = env.step(action)
 
+            # Log additional info
+            logging.info(f"Info: {info}")
+
             # Update rewards
             reward_sum += reward
             episode_rewards.append(reward)
-
-            # Log each action
-            logging.info(
-                f"Action = {action}, Reward = {reward}, Total Reward = {reward_sum}, Done = {done}"
-            )
 
             # Save observation (optional, for debugging)
             if config.get("save_images", False) and (done or reward != 0 or len(episode_rewards) % 10 == 0):

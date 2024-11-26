@@ -26,6 +26,8 @@ class FPAGame(Env):
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
         self.prev_observation = None  # Initialize prev_observation
+        self.total_reward = 0  # Initialize total reward
+        self.rewards_list = []  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
         self.template = cv2.imread("swirly.png")
         self.server_process = server_process  # Add server process
@@ -73,21 +75,25 @@ class FPAGame(Env):
         self.prev_swirlies = current_swirlies  # Update prev_swirlies
 
         # Calculate frame difference
-        frame_diff = np.mean(np.abs(self.prev_observation - new_observation))
-        print(f"Frame difference after action {action}: {frame_diff:.2f}")
+        frame_diff = round(np.mean(np.abs(self.prev_observation - new_observation)))
 
         # Update previous observation
         self.prev_observation = new_observation
 
+        # Calculate overall reward
         episode_reward = 0
-        # Determine reward
-        if frame_diff > 5:
-            episode_reward += 1
+
+        # Determine reward based on frame difference
+        frame_diff_threshold = 5
+        if frame_diff > frame_diff_threshold:
+            episode_reward += round((frame_diff - frame_diff_threshold) * 0.5)
         else:
-            episode_reward = -1
+            episode_reward -= 1
+
+        # Reward for completing the level
         if self.get_done():
             print(f"Reward received for completing the level: {episode_reward}")
-            episode_reward = 100
+            episode_reward += 100  # Ensure this is additive to keep previous rewards
             done = True
         else:
             done = False
@@ -95,19 +101,23 @@ class FPAGame(Env):
         # Reward for collecting swirlies
         swirlie_reward = 10 * collected_swirlies
         episode_reward += swirlie_reward
-        # print("Swirlies collected:", collected_swirlies)
-        # print(f"Swirlie reward: {swirlie_reward}")
+
+        # Update total reward and rewards list
+        self.total_reward += episode_reward
+        self.rewards_list.append(episode_reward)
 
         # Store relevant info in info dict
+        # Store relevant info in info dict
         info = {
-            "action": action,
-            "num_swirlies": num_swirlies,
-            "collected_swirlies": collected_swirlies,
-            "swirlie_reward": swirlie_reward,
-            "frame_diff": frame_diff,
-            "done": done,
-            "episode reward": episode_reward,
-            "action": action
+            "action": action,  # Action taken
+            "swirlies detected": num_swirlies,  # Number of swirlies detected
+            "swirlies collected": collected_swirlies,  # Number of swirlies collected
+            "swirlies reward": swirlie_reward,  # Reward for collecting swirlies
+            "frame difference": frame_diff,  # Difference between frames
+            "done": done,  # Whether the episode is done
+            "episode reward": episode_reward,  # Reward for the current episode
+            "total reward": self.total_reward,  # Total accumulated reward
+            "last 10 rewards": self.rewards_list[-10:]  # List of the last ten rewards for each step
         }
 
         return new_observation, episode_reward, done, info
