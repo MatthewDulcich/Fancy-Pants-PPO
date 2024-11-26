@@ -8,6 +8,7 @@ from gymnasium.spaces import Box, Discrete
 import traceback
 import json
 from track_swirlies import track_swirlies
+from pynput import keyboard  # To capture keyboard events
 
 config_file = "game_config.json"
 with open(config_file, 'r') as file:
@@ -23,7 +24,8 @@ class FPAGame(Env):
         self.prev_observation = None  # Initialize prev_observation
         self.prev_swirlies = []  # Initialize prev_swirlies
         self.template = cv2.imread("swirly.png")
-
+        self.pressed_keys = set()
+        self.last_key_event = "None"
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -141,6 +143,33 @@ class FPAGame(Env):
             observation = np.expand_dims(downscaled_frame, axis=0)
             return observation
         
+    def get_keyboard_input(self):
+        def on_press(key):
+            if key not in self.pressed_keys:
+                self.pressed_keys.add(key)
+                try:
+                    self.last_key_event = key.char
+                    print(f'Key {key.char} pressed')
+                except AttributeError:
+                    self.last_key_event = str(key)
+                    print(f'Special key {key} pressed')
+            return str(self.last_key_event)
+
+        def on_release(key):
+            if key in self.pressed_keys:
+                self.pressed_keys.remove(key)
+                self.last_key_event = str(key)
+                print(f'Key {key} released')
+            if key == keyboard.Key.esc:
+                # Stop listener
+                return False
+            return str(self.last_key_event)
+
+        # Start the keyboard listener
+        listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+        listener.start()
+        # listener.join()
+
     def get_done(self):
         """
         Check if the screen is black (end of level).
