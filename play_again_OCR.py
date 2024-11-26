@@ -13,6 +13,8 @@ def wait_for_text(region, target_text, timeout=60, check_interval=1):
     iteration = 0
     while time.time() - start_time < timeout:
         screenshot = pyautogui.screenshot(region=region)
+        # show screenshot briefly
+        # screenshot.show()
         gray_image = screenshot.convert('L')  # Convert to grayscale for better OCR
         detected_text = pytesseract.image_to_string(gray_image).strip()
         print(f"Iteration {iteration} / {timeout}: Detected Text: {detected_text}")

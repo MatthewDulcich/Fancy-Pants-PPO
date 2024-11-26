@@ -115,7 +115,7 @@ def main():
             # Save observation (optional, for debugging)
             if config.get("save_images", False) and (done or reward != 0 or len(episode_rewards) % 10 == 0):
                 cv2.imwrite(
-                    f"episode_{episode_count}_step_{len(episode_rewards)}.png",
+                    f"observation_screen_grabs/episode_{episode_count}_step_{len(episode_rewards)}.png",
                     obs[0],
                     [int(cv2.IMWRITE_PNG_COMPRESSION), 7]
                 )

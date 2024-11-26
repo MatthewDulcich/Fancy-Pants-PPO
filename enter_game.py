@@ -27,7 +27,7 @@ def enter_game(window, pre_loaded=False):
         return
 
     # Step 3: Define button region and adjust for Safari window position
-    button_region = (200, 325, 140, 40)  # Relative coordinates (x, y, width, height) NOTE: I changed this to 325 from 300
+    button_region = (200, 300, 140, 40)  # Relative coordinates (x, y, width, height) NOTE: I changed this to 325 from 300
     adjusted_button_region = adjust_for_menu_bar(safari_window, button_region)
     print("Adjusted Button Region:", adjusted_button_region)
 

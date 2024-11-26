@@ -52,38 +52,25 @@ class FPAGame(Env):
         }
 
         key = action_map[action]
-        print(f"Performing action: {action}, Key: {key}")
+        # print(f"Performing action: {action}, Key: {key}")
 
         # Perform the action
         if key != 4:
             self.key_toggle(key)
 
         # Capture observation after action using `get_observation`
-        new_observation = self.get_observation()
+        new_observation, original_scale_frame = self.get_observation()
 
         # Ensure prev_observation is initialized
         if self.prev_observation is None:
             self.prev_observation = new_observation
 
-        # TODO: Get game observation that is not downscaled
-        with mss.mss() as sct:
-            monitor = {
-                "top": self.game_location['top'],
-                "left": self.game_location['left'],
-                "width": self.game_location['width'],
-                "height": self.game_location['height']
-            }
-            # Capture the game region
-            screenshot = sct.grab(monitor)
-            # Convert to numpy array to fetch pixel data
-            frame = np.array(screenshot)[:, :, :3]
-
         # Detect swirlies
-        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(frame, self.template, self.prev_swirlies)
+        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(original_scale_frame, self.template, self.prev_swirlies)
         prev_swirlies = current_swirlies
         # Detect swirlies (use the same captured observation)
-        # num_swirlies, current_swirlies, collected_swirlies = track_swirlies(new_observation[0], self.template, self.prev_swirlies)
-        # self.prev_swirlies = current_swirlies  # Update prev_swirlies
+        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(new_observation[0], self.template, self.prev_swirlies)
+        self.prev_swirlies = current_swirlies  # Update prev_swirlies
 
         # Calculate frame difference
         frame_diff = np.mean(np.abs(self.prev_observation - new_observation))
@@ -92,34 +79,38 @@ class FPAGame(Env):
         # Update previous observation
         self.prev_observation = new_observation
 
+        episode_reward = 0
         # Determine reward
-        reward = 1 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
-        reward = 1 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
+        if frame_diff > 5:
+            episode_reward += 1
+        else:
+            episode_reward = -1
         if self.get_done():
-            print(f"Reward received for completing the level: {reward}")
-            reward = 100
+            print(f"Reward received for completing the level: {episode_reward}")
+            episode_reward = 100
             done = True
         else:
             done = False
 
         # Reward for collecting swirlies
-        # swirlie_reward = reward + 10 * collected_swirlies
+        swirlie_reward = 10 * collected_swirlies
+        episode_reward += swirlie_reward
         # print("Swirlies collected:", collected_swirlies)
         # print(f"Swirlie reward: {swirlie_reward}")
 
         # Store relevant info in info dict
         info = {
-            # "num_swirlies": num_swirlies,
-            # "collected_swirlies": collected_swirlies,
-            # "swirlie_reward": swirlie_reward,
+            "action": action,
+            "num_swirlies": num_swirlies,
+            "collected_swirlies": collected_swirlies,
+            "swirlie_reward": swirlie_reward,
             "frame_diff": frame_diff,
             "done": done,
-            "reward": reward,
-            "action": action,
-            "reward_sum": reward
+            "episode reward": episode_reward,
+            "action": action
         }
 
-        return new_observation, reward, done, info
+        return new_observation, episode_reward, done, info
 
     def reset(self):
         """
@@ -127,6 +118,10 @@ class FPAGame(Env):
         """
         try:
 
+            # Reset total reward and rewards list
+            self.total_reward = 0
+            self.rewards_list = []
+            
             # Stop existing processes safely
             self.cleanup_resources(self.server_process, self.safari_process)
 
@@ -141,7 +136,7 @@ class FPAGame(Env):
             enter_game.enter_game(safari_window, pre_loaded=True)
 
             # Reinitialize observation
-            self.prev_observation = self.get_observation()
+            self.prev_observation, _ = self.get_observation()
             return self.prev_observation
 
         except Exception as e:
@@ -187,9 +182,12 @@ class FPAGame(Env):
         screenshot = self.sct.grab(monitor)
 
         # Convert to numpy array and keep only the grayscale channel
-        frame = np.array(screenshot, dtype=np.uint8)[:, :, 0]  # Use only one channel for grayscale
+        frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)
+
+        # Convert to grayscale
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        # Downscale the frame directly without explicit grayscale conversion
+        # Downscale the grayscale frame
         downscaled_frame = cv2.resize(
             frame, 
             (config['down_scaled']['width'], config['down_scaled']['height']), 
@@ -199,14 +197,14 @@ class FPAGame(Env):
         # Add channel dimension for compatibility
         observation = np.expand_dims(downscaled_frame, axis=0)
 
-        return observation
+        return observation, frame
         
     def get_done(self):
         """
         Check if the screen is black (end of level).
         """
         # Directly capture observation
-        observation = self.get_observation()
+        observation, _ = self.get_observation()
 
         # Use numpy operations to calculate average intensity
         avg_intensity = observation.mean()  # More efficient than np.mean(observation)

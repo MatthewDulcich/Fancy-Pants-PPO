@@ -21,13 +21,13 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
     observation = np.array(observation, dtype=np.uint8)
     
     # Convert the observation to grayscale
-    gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
+    # gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
     
     # Convert the template to grayscale
     gray_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
     
     # Perform template matching
-    result = cv2.matchTemplate(gray_observation, gray_template, cv2.TM_CCOEFF_NORMED)
+    result = cv2.matchTemplate(observation, gray_template, cv2.TM_CCOEFF_NORMED)
     
     # Define a threshold for detecting the swirly
     threshold = 0.8
