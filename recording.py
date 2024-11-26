@@ -97,9 +97,10 @@ def main():
 
             # Capture the current frame
             obs = env.get_observation()
+            # print(obs.shape)
             
             # Save frame and action
-            # frames[step_count] = obs
+            frames[step_count] = obs
             actions[step_count] = current_key
             step_count += 1
             time.sleep(0.1)
