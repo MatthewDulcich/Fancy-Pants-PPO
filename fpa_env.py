@@ -167,6 +167,7 @@ class FPAGame(Env):
 
         # Start the keyboard listener
         listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+        listener.daemon = True
         listener.start()
         # listener.join()
 
