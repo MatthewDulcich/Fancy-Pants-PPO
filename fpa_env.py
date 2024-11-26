@@ -65,6 +65,22 @@ class FPAGame(Env):
         if self.prev_observation is None:
             self.prev_observation = new_observation
 
+        # TODO: Get game observation that is not downscaled
+        with mss.mss() as sct:
+            monitor = {
+                "top": self.game_location['top'],
+                "left": self.game_location['left'],
+                "width": self.game_location['width'],
+                "height": self.game_location['height']
+            }
+            # Capture the game region
+            screenshot = sct.grab(monitor)
+            # Convert to numpy array to fetch pixel data
+            frame = np.array(screenshot)[:, :, :3]
+
+        # Detect swirlies
+        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(frame, self.template, self.prev_swirlies)
+        prev_swirlies = current_swirlies
         # Detect swirlies (use the same captured observation)
         # num_swirlies, current_swirlies, collected_swirlies = track_swirlies(new_observation[0], self.template, self.prev_swirlies)
         # self.prev_swirlies = current_swirlies  # Update prev_swirlies
@@ -77,6 +93,7 @@ class FPAGame(Env):
         self.prev_observation = new_observation
 
         # Determine reward
+        reward = 1 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
         reward = 1 if frame_diff > 5 else -1  # Adjust threshold (e.g., >5)
         if self.get_done():
             print(f"Reward received for completing the level: {reward}")
@@ -151,7 +168,8 @@ class FPAGame(Env):
     # Visualize the game (get observation)
     def render(self):
         pass
-
+    
+    # Not used in this implementation
     # Close the observation (closes render)
     def close(self):
         pass
