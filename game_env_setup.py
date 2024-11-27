@@ -81,7 +81,6 @@ def capture_observation(canvas_info, content_offset):
 
 def reset_episode(env, reward_sum, episode_rewards, episode_count):
     obs = env.reset()
-    # logging.info(f"Episode {episode_count} Summary: Total Reward = {reward_sum}, Steps = {len(episode_rewards)}")
     return obs, 0, [], episode_count + 1, time.time()
 
 def cleanup(server_process, safari_process):

@@ -81,30 +81,30 @@ class FPAGame(Env):
         self.prev_observation = new_observation
 
         # Calculate overall reward
-        episode_reward = 0
+        reward = 0
 
         # Determine reward based on frame difference
         frame_diff_threshold = 5
         if frame_diff > frame_diff_threshold:
-            episode_reward += round((frame_diff - frame_diff_threshold) * 0.5)
+            reward += round((frame_diff - frame_diff_threshold) * 0.5)
         else:
-            episode_reward -= 1
+            reward -= 1
 
         # Reward for completing the level
         if self.get_done():
-            print(f"Reward received for completing the level: {episode_reward}")
-            episode_reward += 100  # Ensure this is additive to keep previous rewards
+            print(f"Reward received for completing the level: {reward}")
+            reward += 100  # Ensure this is additive to keep previous rewards
             done = True
         else:
             done = False
 
         # Reward for collecting swirlies
         swirlie_reward = 10 * collected_swirlies
-        episode_reward += swirlie_reward
+        reward += swirlie_reward
 
         # Update total reward and rewards list
-        self.total_reward += episode_reward
-        self.rewards_list.append(episode_reward)
+        self.total_reward += reward
+        self.rewards_list.append(reward)
 
         # Store relevant info in info dict
         # Store relevant info in info dict
@@ -115,12 +115,12 @@ class FPAGame(Env):
             "swirlies reward": swirlie_reward,  # Reward for collecting swirlies
             "frame difference": frame_diff,  # Difference between frames
             "done": done,  # Whether the episode is done
-            "episode reward": episode_reward,  # Reward for the current episode
+            "episode reward": reward,  # Reward for the current episode
             "total reward": self.total_reward,  # Total accumulated reward
             "last 10 rewards": self.rewards_list[-10:]  # List of the last ten rewards for each step
         }
 
-        return new_observation, episode_reward, done, info
+        return new_observation, reward, done, info
 
     def reset(self):
         """

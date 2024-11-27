@@ -100,8 +100,24 @@ def main():
             # Check for timeout
             if time.time() - start_time > timeout:
                 print(100 * "-")
-                logging.info(100 * "-")
+                positive_rewards = sum(1 for r in episode_rewards if r > 0)
+                negative_rewards = sum(1 for r in episode_rewards if r < 0)
+                average_reward = reward_sum / len(episode_rewards) if episode_rewards else 0
+
+                logging.info(
+                    f"Episode {episode_count} Summary: "
+                    f"Total Reward = {reward_sum}, "
+                    f"Steps = {len(episode_rewards)}, "
+                    f"Positive Rewards = {positive_rewards}, "
+                    f"Negative Rewards = {negative_rewards}, "
+                    f"Average Reward = {average_reward:.2f}, "
+                    f"Max Reward = {max(episode_rewards, default=0)}, "
+                    f"Last 10 Rewards = {episode_rewards[-10:]}"
+                )
                 logging.info(f"Timeout or episode complete for Episode {episode_count}. Resetting environment...")
+                logging.info(100 * "-")
+                logging.info(100 * "-")
+                logging.info(100 * "-")
                 obs, reward_sum, episode_rewards, episode_count, start_time = game_env_setup.reset_episode(env, reward_sum, episode_rewards, episode_count)
                 continue
 
@@ -110,20 +126,31 @@ def main():
             obs, reward, done, info = env.step(action)
 
             # Log additional info
-            logging.info(f"Info: {info}")
+            # Step-level logging
+            logging.info(
+                f"Step {len(episode_rewards)} | "
+                f"Action: {info['action']} | "
+                f"Reward: {info['episode reward']} | "
+                f"Total Episode Reward: {reward_sum} | "
+                f"Frame Difference: {info['frame difference']} | "
+                f"Swirlies Detected: {info.get('swirlies detected', 0)} | "
+                f"Swirlies Collected: {info.get('swirlies collected', 0)} | "
+                f"Last 10 Rewards: {episode_rewards[-10:]}"
+            )
 
             # Update rewards
             reward_sum += reward
             episode_rewards.append(reward)
 
-            # Save observation (optional, for debugging)
-            if config.get("save_images", False) and (done or reward != 0 or len(episode_rewards) % 10 == 0):
-                cv2.imwrite(
-                    f"observation_screen_grabs/episode_{episode_count}_step_{len(episode_rewards)}.png",
-                    obs[0],
-                    [int(cv2.IMWRITE_PNG_COMPRESSION), 7]
-                )
+            rolling_window = 10
+            rolling_avg_reward = sum(episode_rewards[-rolling_window:]) / len(episode_rewards[-rolling_window:])
+            rolling_avg_frame_diff = sum(info.get('frame difference', 0) for _ in episode_rewards[-rolling_window:]) / rolling_window
 
+            logging.info(
+                f"Rolling Avg Reward (Last {rolling_window} Steps): {rolling_avg_reward:.2f} | "
+                f"Rolling Avg Frame Diff (Last {rolling_window} Steps): {rolling_avg_frame_diff:.2f}"
+            )
+            
             # End the episode if the level is finished
             if done:
                 logging.info(f"Level finished in Episode {episode_count}. Resetting environment...")
