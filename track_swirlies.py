@@ -22,9 +22,10 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
     
     # Convert the observation to grayscale
     # gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
-    
+    # print(gray_observation.shape)
     # Convert the template to grayscale
     gray_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+    print(observation.shape)
     
     # Perform template matching
     result = cv2.matchTemplate(observation, gray_template, cv2.TM_CCOEFF_NORMED)
@@ -121,7 +122,7 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
                 if frame_rect[0] <= prev_swirlies[i][0] <= frame_rect[2] and frame_rect[1] <= prev_swirlies[i][1] <= frame_rect[3]:
                     collected_swirlies += 1
     
-    num_swirlies = collected_swirlies * 10  # Assign a num_swirlies for each swirly collected
+    num_swirlies = collected_swirlies # * 10  # Assign a num_swirlies for each swirly collected
     # Print the number of swirlies detected
     if print_to_terminal:
         print(f"Number of swirlies detected: {len(indices)}")

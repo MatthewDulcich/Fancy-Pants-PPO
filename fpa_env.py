@@ -67,12 +67,16 @@ class FPAGame(Env):
         if self.prev_observation is None:
             self.prev_observation = new_observation
 
+        # TODO: Fix this double declaration
         # Detect swirlies
         num_swirlies, current_swirlies, collected_swirlies = track_swirlies(original_scale_frame, self.template, self.prev_swirlies)
         prev_swirlies = current_swirlies
         # Detect swirlies (use the same captured observation)
-        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(new_observation[0], self.template, self.prev_swirlies)
-        self.prev_swirlies = current_swirlies  # Update prev_swirlies
+        # num_swirlies, current_swirlies, collected_swirlies = track_swirlies(new_observation[0], self.template, self.prev_swirlies)
+        # self.prev_swirlies = current_swirlies  # Update prev_swirlies
+        print(f"Swirlies detected: {num_swirlies}, Collected: {collected_swirlies}")
+
+        # print(new_observation[0].shape, original_scale_frame.shape)
 
         # Calculate frame difference
         frame_diff = round(np.mean(np.abs(self.prev_observation - new_observation)))
