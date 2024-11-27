@@ -25,7 +25,7 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
     # print(gray_observation.shape)
     # Convert the template to grayscale
     gray_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-    print(observation.shape)
+    # print(gray_observation.shape)
     
     # Perform template matching
     result = cv2.matchTemplate(observation, gray_template, cv2.TM_CCOEFF_NORMED)
