@@ -63,6 +63,7 @@ class FPAGame(Env):
 
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
+        # print(new_observation.shape, original_scale_frame.shape) # TODO: original_scale_frame is getting doubled
 
         # Ensure prev_observation is initialized
         if self.prev_observation is None:
@@ -180,16 +181,18 @@ class FPAGame(Env):
         pass
     
     # Get the game window
-    def get_observation(self):
+    def get_observation(self): # TODO: Fix bug between the monitor and screenshot grab, the screenshot is getting doubled
         monitor = {
             "top": self.game_location['top'],
             "left": self.game_location['left'],
             "width": self.game_location['width'],
             "height": self.game_location['height']
         }
+        print("Monitor:", monitor)
 
         # Capture the game region using persistent mss context
         screenshot = self.sct.grab(monitor)
+        print("Screenshot shape:", screenshot.size)
 
         # Convert to numpy array and keep only the grayscale channel
         frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)
