@@ -155,7 +155,7 @@ def main():
             if time.time() - start_time > timeout and not dones[-1]:
                 logging.info("Timeout reached. Resetting environment...")
                 print("Timeout reached. Resetting environment...")
-                env.reset()
+                # env.reset()
                 start_time = time.time()
 
             episode_count += 1

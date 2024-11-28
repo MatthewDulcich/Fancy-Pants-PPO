@@ -1,7 +1,9 @@
 from collections import deque
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import logging
 
 class PPOAgent(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -40,8 +42,8 @@ def collect_rollouts(env, policy, n_steps=2048):
 
     state = env.reset()  # Reset the environment
     for step in range(n_steps):
-        # Convert state to a PyTorch tensor
-        state_tensor = torch.tensor(state.flatten(), dtype=torch.float32).unsqueeze(0)
+        # Preprocess state
+        state_tensor = torch.tensor(np.array(state).flatten(), dtype=torch.float32).unsqueeze(0)
 
         # Forward pass through the policy network
         policy_logits, state_value = policy(state_tensor)
@@ -53,7 +55,7 @@ def collect_rollouts(env, policy, n_steps=2048):
         next_state, reward, done, _ = env.step(action.item())
 
         # Store trajectory data
-        states.append(state)
+        states.append(state.flatten())  # Preprocessed and flattened
         actions.append(action.item())
         rewards.append(reward)
         log_probs.append(log_prob.item())
@@ -65,16 +67,18 @@ def collect_rollouts(env, policy, n_steps=2048):
         if done:
             state = env.reset()  # Reset on episode completion
 
+    states = np.array(states)  # Combine into a single NumPy array for better tensor conversion
     return states, actions, rewards, log_probs, values, dones
 
+
 def compute_ppo_loss(
-    policy, states, actions, rewards, log_probs, values, dones, gamma=0.99, epsilon=0.2
+    policy, states, actions, rewards, log_probs, values, dones, gamma=0.99, epsilon=0.2, entropy_coef=0.01
 ):
     """
     Compute PPO loss (policy, value, and entropy components).
 
     :param policy: PPO policy network.
-    :param states: List of states.
+    :param states: Preprocessed states (NumPy array or tensor).
     :param actions: List of actions.
     :param rewards: List of rewards.
     :param log_probs: List of log probabilities of actions.
@@ -82,11 +86,11 @@ def compute_ppo_loss(
     :param dones: List of episode end indicators.
     :param gamma: Discount factor.
     :param epsilon: Clipping parameter for PPO.
+    :param entropy_coef: Weight for entropy bonus.
     :return: Total loss (policy + value + entropy).
     """
     # Compute returns and advantages
     returns = []
-    advantages = []
     running_return = 0
     for reward, done in zip(reversed(rewards), reversed(dones)):
         running_return = reward + gamma * running_return * (1 - done)
@@ -95,7 +99,8 @@ def compute_ppo_loss(
     returns = torch.tensor(returns, dtype=torch.float32)
     values = torch.tensor(values, dtype=torch.float32)
     advantages = returns - values
-    advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+    std_adv = advantages.std() + 1e-8  # Avoid division by zero
+    advantages = (advantages - advantages.mean()) / std_adv
 
     # Convert states and actions to tensors
     state_tensor = torch.tensor(states, dtype=torch.float32).view(len(states), -1)
@@ -117,9 +122,13 @@ def compute_ppo_loss(
     # Entropy bonus
     entropy = action_distribution.entropy().mean()
 
+    # Log individual loss components
+    logging.info(f"Policy Loss: {policy_loss.item():.4f} | Value Loss: {value_loss.item():.4f} | Entropy: {entropy.item():.4f}")
+
     # Total loss
-    total_loss = policy_loss + 0.5 * value_loss - 0.01 * entropy
+    total_loss = policy_loss + 0.5 * value_loss - entropy_coef * entropy
     return total_loss
+
 
 def update_policy(policy, optimizer, states, actions, rewards, log_probs, values, dones):
     """

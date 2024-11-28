@@ -45,6 +45,7 @@ class FPAGame(Env):
             self.key_states[key] = False
 
     def step(self, action):
+        # action map
         action_map = {
             0: 'left',         # press: Left
             1: 'right',        # press: Right
@@ -71,9 +72,7 @@ class FPAGame(Env):
         num_swirlies, current_swirlies, collected_swirlies = track_swirlies(original_scale_frame, self.template, self.prev_swirlies)
         self.prev_swirlies = current_swirlies
         
-        # print(f"Swirlies detected: {num_swirlies}, Collected: {collected_swirlies}, Total: {len(current_swirlies)}")
-
-        # print(new_observation[0].shape, original_scale_frame.shape)
+        print(f"Swirlies detected: {num_swirlies}, Collected: {collected_swirlies}, Total: {len(current_swirlies)}")
 
         # Calculate frame difference
         frame_diff = round(np.mean(np.abs(self.prev_observation - new_observation)))
@@ -229,7 +228,7 @@ class FPAGame(Env):
         Clean up resources by terminating server and Safari processes.
         """
         try:
-            print("Clean up function called...")
+            print("Clean up function called in env reset...")
             
             # Safely terminate the Ruffle server process
             if server_process:
