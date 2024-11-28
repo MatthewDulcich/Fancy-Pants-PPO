@@ -45,6 +45,10 @@ def main():
     safari_process = None
     env = None  # Ensure `env` is defined for cleanup in case of an error
 
+    # Ensure the saved models directory exists
+    models_dir = os.path.join(os.getcwd(), 'Model Checkpoints')
+    os.makedirs(models_dir, exist_ok=True)
+
     try:
         # Initialize environment and PPO
         logging.info("Starting PPO Training")
@@ -97,7 +101,7 @@ def main():
 
         # Initialize action tracker
         action_counts = {action: 0 for action in range(env.action_space.n)}
-
+        
         while True:
             episode_start_time = time.time()  # Start time for episode
             print(f"Starting episode {episode_count}")
@@ -113,12 +117,10 @@ def main():
 
             # Log action distribution
             logging.info(f"Action Distribution: {action_counts}")
-            print(f"Action Distribution: {action_counts}")
 
             # Update policy
             ppo_loss = update_policy(policy, optimizer, states, actions, rewards, log_probs, values, dones)
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
-            print(f"PPO Loss: {ppo_loss:.4f}")
 
             # Log reward statistics
             max_reward = max(rewards)
@@ -127,34 +129,26 @@ def main():
             avg_reward = cumulative_reward / len(rewards)
 
             logging.info(
-            f"Episode {episode_count} | Avg Reward: {avg_reward:.2f} | Max Reward: {max_reward:.2f} | "
-            f"Min Reward: {min_reward:.2f} | Cumulative Reward: {cumulative_reward:.2f}"
-            )
-            print(
-            f"Episode {episode_count} | Avg Reward: {avg_reward:.2f} | Max Reward: {max_reward:.2f} | "
-            f"Min Reward: {min_reward:.2f} | Cumulative Reward: {cumulative_reward:.2f}"
-            )
+            f"Episode {episode_count} | Avg Reward: {avg_reward:.2f} | Max Reward: {max_reward:.2f} | " 
+            f"Min Reward: {min_reward:.2f} | Cumulative Reward: {cumulative_reward:.2f}")
 
             # Log last 10 rewards
             last_rewards = rewards[-10:] if len(rewards) >= 10 else rewards
             logging.info(f"Last 10 Rewards: {last_rewards}")
-            print(f"Last 10 Rewards: {last_rewards}")
 
             # Calculate and log episode duration
             episode_duration = time.time() - episode_start_time
             logging.info(f"Episode {episode_count} Duration: {episode_duration:.2f} seconds")
-            print(f"Episode {episode_count} Duration: {episode_duration:.2f} seconds")
 
             # Save policy periodically
             if episode_count % 10 == 0:
-                save(policy.state_dict(), f"ppo_policy_episode_{episode_count}.pt")
-                logging.info(f"Model saved at Episode {episode_count}")
-                print(f"Model saved at Episode {episode_count}")
+                save_path = os.path.join(models_dir, f"ppo_policy_episode_{episode_count}.pt")
+                save(policy.state_dict(), save_path)
+                logging.info(f"Model saved at Episode {episode_count} to {save_path}")
 
             # Reset if timeout is reached
             if time.time() - start_time > timeout and not dones[-1]:
                 logging.info("Timeout reached. Resetting environment...")
-                print("Timeout reached. Resetting environment...")
                 # env.reset()
                 start_time = time.time()
 
