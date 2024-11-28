@@ -17,7 +17,6 @@ from ppo_model import PPOAgent, collect_rollouts, update_policy
 import torch.optim as optim
 import config_handler
 
-
 # Load configuration
 config = config_handler.load_config("game_config.json")
 
@@ -81,57 +80,86 @@ def main():
             'height': game_location['height'],
         }
 
-        # Step 5: Initialize FPAGame environment
+        # Initialize FPAGame environment
         logging.info("Initializing FPAGame environment...")
         env = FPAGame(adjusted_game_location, safari_process=safari_process, server_process=server_process)
 
-        # Step 6: Run actions with timeout-based resets
-        logging.info("Starting training with timeout-based reset...")
-        timeout = config['timeout_mins'] * 60
-        start_time = time.time()
-        reward_sum = 0
-        episode_rewards = []  # Track rewards for the current episode
-        episode_count = 1
-
         # Initialize PPO policy and optimizer
         input_dim = config['down_scaled']['width'] * config['down_scaled']['height']
-        print("Input Dim:", input_dim)
         policy = PPOAgent(input_dim=input_dim, output_dim=env.action_space.n)
         optimizer = optim.Adam(policy.parameters(), lr=3e-4)
 
         # Training loop
-        # episode_count = 1
-        # reward_sum = 0
-        # episode_rewards = []  # Track rewards for the current episode
-        timeout = config['timeout_mins'] * 60  # Set timeout duration
-        start_time = time.time()  # Track start time for timeout-based resets
+        logging.info("Starting training with timeout-based reset...")
+        timeout = config['timeout_mins'] * 60
+        start_time = time.time()
+        episode_count = 1
 
-        print('entering training loop')
+        # Initialize action tracker
+        action_counts = {action: 0 for action in range(env.action_space.n)}
+
         while True:
+            episode_start_time = time.time()  # Start time for episode
+            print(f"Starting episode {episode_count}")
+
             # Collect rollouts
             states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=256)
             logging.info(f"Collected rollouts: {len(states)} steps")
+            print(f"Collected rollouts: {len(states)} steps")
+
+            # Update action counts
+            for action in actions:
+                action_counts[action] += 1
+
+            # Log action distribution
+            logging.info(f"Action Distribution: {action_counts}")
+            print(f"Action Distribution: {action_counts}")
 
             # Update policy
             ppo_loss = update_policy(policy, optimizer, states, actions, rewards, log_probs, values, dones)
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
+            print(f"PPO Loss: {ppo_loss:.4f}")
 
-            # Log training progress
-            avg_reward = sum(rewards) / len(rewards)
-            logging.info(f"Episode {episode_count} | Avg Reward: {avg_reward:.2f} | PPO Loss: {ppo_loss:.4f}")
+            # Log reward statistics
+            max_reward = max(rewards)
+            min_reward = min(rewards)
+            cumulative_reward = sum(rewards)
+            avg_reward = cumulative_reward / len(rewards)
+
+            logging.info(
+            f"Episode {episode_count} | Avg Reward: {avg_reward:.2f} | Max Reward: {max_reward:.2f} | "
+            f"Min Reward: {min_reward:.2f} | Cumulative Reward: {cumulative_reward:.2f}"
+            )
+            print(
+            f"Episode {episode_count} | Avg Reward: {avg_reward:.2f} | Max Reward: {max_reward:.2f} | "
+            f"Min Reward: {min_reward:.2f} | Cumulative Reward: {cumulative_reward:.2f}"
+            )
+
+            # Log last 10 rewards
+            last_rewards = rewards[-10:] if len(rewards) >= 10 else rewards
+            logging.info(f"Last 10 Rewards: {last_rewards}")
+            print(f"Last 10 Rewards: {last_rewards}")
+
+            # Calculate and log episode duration
+            episode_duration = time.time() - episode_start_time
+            logging.info(f"Episode {episode_count} Duration: {episode_duration:.2f} seconds")
+            print(f"Episode {episode_count} Duration: {episode_duration:.2f} seconds")
 
             # Save policy periodically
             if episode_count % 10 == 0:
                 save(policy.state_dict(), f"ppo_policy_episode_{episode_count}.pt")
                 logging.info(f"Model saved at Episode {episode_count}")
+                print(f"Model saved at Episode {episode_count}")
 
             # Reset if timeout is reached
             if time.time() - start_time > timeout and not dones[-1]:
                 logging.info("Timeout reached. Resetting environment...")
+                print("Timeout reached. Resetting environment...")
                 env.reset()
                 start_time = time.time()
 
             episode_count += 1
+            print(f"Finished episode {episode_count}")
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
