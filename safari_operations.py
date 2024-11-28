@@ -15,6 +15,7 @@ def get_safari_window_coordinates():
     try:
         output = subprocess.check_output(["osascript", "-e", script])
         coordinates = [int(coord) for coord in output.decode().strip().split(", ")]
+        print("Safari Window Coordinates:", coordinates)
         return {
             "left": coordinates[0],
             "top": coordinates[1],

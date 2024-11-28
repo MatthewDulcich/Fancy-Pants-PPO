@@ -21,7 +21,7 @@ config = config_handler.load_config("game_config.json")
 class FPAGame(Env):
     def __init__(self, game_location, server_process=None, safari_process=None):
         super().__init__()
-        self.observation_space = Box(low=0, high=255, shape=(1, 400, 800), dtype=np.uint8)
+        self.observation_space = Box(low=0, high=255, shape=(1, 400, 550), dtype=np.uint8)
         self.action_space = Discrete(5)  # Number of actions
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
@@ -105,7 +105,7 @@ class FPAGame(Env):
 
         # Update total reward and rewards list
         self.total_reward += reward
-        self.rewards_list.append(reward)
+        self.rewards_list.append(reward) # TODO: turn this into a long list of rewards, where we replace eac reward with the new one
 
         # Store relevant info in info dict
         # Store relevant info in info dict
@@ -229,7 +229,7 @@ class FPAGame(Env):
         Clean up resources by terminating server and Safari processes.
         """
         try:
-            print("Cleaning up resources...")
+            print("Clean up function called...")
             
             # Safely terminate the Ruffle server process
             if server_process:
