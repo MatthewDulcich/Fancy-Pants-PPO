@@ -27,7 +27,6 @@ def wait_for_text(region, target_text, timeout=60, check_interval=1):
 
     return False  # Timeout reached
 
-
 def click_center_of_region(region):
     """
     Clicks the center of the given screen region.

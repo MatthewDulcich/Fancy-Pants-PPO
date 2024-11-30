@@ -102,6 +102,7 @@ def main():
         # Initialize action tracker
         action_counts = {action: 0 for action in range(env.action_space.n)}
         
+        # Training loop
         while True:
             episode_start_time = time.time()  # Start time for episode
             print(f"Starting episode {episode_count}")

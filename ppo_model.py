@@ -10,7 +10,7 @@ class PPOAgent(nn.Module):
         super(PPOAgent, self).__init__()
         self.shared_layers = nn.Sequential(
             nn.Linear(input_dim, 128),
-            nn.ReLU(),
+            nn.ReLU(), # TODO: look into conv layers
             nn.Linear(128, 128),
             nn.ReLU(),
         )
@@ -69,7 +69,6 @@ def collect_rollouts(env, policy, n_steps=2048):
 
     states = np.array(states)  # Combine into a single NumPy array for better tensor conversion
     return states, actions, rewards, log_probs, values, dones
-
 
 def compute_ppo_loss(
     policy, states, actions, rewards, log_probs, values, dones, gamma=0.99, epsilon=0.2, entropy_coef=0.01
