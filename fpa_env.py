@@ -34,8 +34,8 @@ class FPAGame(Env):
         self.server_process = server_process  # Add server process
         self.safari_process = safari_process  # Add Safari process
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
-        self.repeat_action_window = 2  # Window size for checking repeated actions
-        self.recent_actions = deque(maxlen=2)  # Track recent actions
+        self.repeat_action_window = 3  # Window size for checking repeated actions
+        self.recent_actions = deque(maxlen=3)  # Track recent actions
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -90,7 +90,7 @@ class FPAGame(Env):
         if frame_diff > frame_diff_threshold:
             reward += round((frame_diff - frame_diff_threshold) * 0.5)
         else:
-            reward -= 1
+            reward -= 5
 
         # Reward for completing the level
         if self.get_done():
