@@ -3,7 +3,7 @@ import time
 import mss
 import numpy as np
 import json
-import config_handler
+import config_handler as config_handler
 
 # Load configuration
 config = config_handler.load_config("game_config.json")

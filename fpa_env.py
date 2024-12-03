@@ -13,7 +13,7 @@ from track_swirlies import track_swirlies
 import game_env_setup
 import enter_game
 import launch_fpa_game
-import config_handler
+import config_handler as config_handler
 
 # Load configuration
 config = config_handler.load_config("game_config.json")

@@ -1,5 +1,5 @@
 from game_env_setup import start_ruffle_host, launch_safari_host, cleanup
-import config_handler
+import config_handler as config_handler
 import json
 
 # Load configuration

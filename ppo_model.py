@@ -5,24 +5,78 @@ import torch.nn as nn
 import torch.optim as optim
 import logging
 
+# class PPOAgent(nn.Module):
+#     def __init__(self, input_dim, output_dim):
+#         super(PPOAgent, self).__init__()
+#         self.shared_layers = nn.Sequential(
+#             nn.Linear(input_dim, 128),
+#             nn.ReLU(), # TODO: look into conv layers
+#             nn.Linear(128, 128),
+#             nn.ReLU(),
+#         )
+#         self.policy_head = nn.Linear(128, output_dim)  # Output probabilities for actions
+#         self.value_head = nn.Linear(128, 1)           # Output state value
+
+#     def forward(self, x):
+#         x = self.shared_layers(x)
+#         policy_logits = self.policy_head(x)
+#         state_value = self.value_head(x)
+#         return policy_logits, state_value
+
 class PPOAgent(nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_channels, input_height, input_width, output_dim):
         super(PPOAgent, self).__init__()
+
+        # Convolutional layers for feature extraction
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4),  # Output: 32x(H/4)x(W/4)
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),              # Output: 64x(H/8)x(W/8)
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),              # Output: 64x(H/8)x(W/8)
+            nn.ReLU()
+        )
+
+        # Compute the flattened size after convolutions
+        self.flatten_size = self._get_conv_output_size(input_height, input_width)
+
+        # Fully connected layers
         self.shared_layers = nn.Sequential(
-            nn.Linear(input_dim, 128),
-            nn.ReLU(), # TODO: look into conv layers
+            nn.Linear(self.flatten_size, 128),
+            nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
         )
+
+        # Policy and value heads
         self.policy_head = nn.Linear(128, output_dim)  # Output probabilities for actions
         self.value_head = nn.Linear(128, 1)           # Output state value
 
+    def _get_conv_output_size(self, height, width):
+        """
+        Compute the size of the flattened output after convolutional layers.
+        """
+        dummy_input = torch.zeros(1, 1, height, width)  # 1xCxHxW
+        conv_output = self.conv_layers(dummy_input)
+        return int(torch.prod(torch.tensor(conv_output.shape[1:])).item())  # Flattened size
+
     def forward(self, x):
-        x = self.shared_layers(x)
+        print(f"Input shape in forward: {x.shape}")  # Debugging input shape
+        if len(x.shape) == 4:  # Input is (B, C, H, W)
+            pass
+        elif len(x.shape) == 3:  # (H, W, C)
+            x = x.unsqueeze(0).permute(0, 3, 1, 2)
+        elif len(x.shape) == 2:  # Flattened input
+            raise ValueError("Input is flattened; expected image-like input for Conv layers.")
+        else:
+            raise ValueError(f"Unexpected input shape: {x.shape}")
+
+        x = self.conv_layers(x)  # Apply convolutional layers
+        x = x.view(x.size(0), -1)  # Flatten
+        x = self.shared_layers(x)  # Fully connected layers
         policy_logits = self.policy_head(x)
         state_value = self.value_head(x)
         return policy_logits, state_value
-    
 
 def collect_rollouts(env, policy, n_steps=2048):
     """
@@ -41,9 +95,18 @@ def collect_rollouts(env, policy, n_steps=2048):
     dones = []
 
     state = env.reset()  # Reset the environment
+    print("Observation shape:", state.shape)
     for step in range(n_steps):
-        # Preprocess state
-        state_tensor = torch.tensor(np.array(state).flatten(), dtype=torch.float32).unsqueeze(0)
+        # Convert state to a PyTorch tensor
+        state_tensor = torch.tensor(state, dtype=torch.float32)
+
+        # If the observation is grayscale (1 channel):
+        if len(state_tensor.shape) == 3:  # (C, H, W)
+            state_tensor = state_tensor.unsqueeze(0)  # Add batch dimension -> (B, C, H, W)
+        elif len(state_tensor.shape) == 2:  # (H, W)
+            state_tensor = state_tensor.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions -> (B, C, H, W)
+        else:
+            raise ValueError(f"Unexpected observation shape: {state_tensor.shape}")
 
         # Forward pass through the policy network
         policy_logits, state_value = policy(state_tensor)
@@ -62,6 +125,9 @@ def collect_rollouts(env, policy, n_steps=2048):
         values.append(state_value.item())
         dones.append(done)
 
+        print(f"Observation shape from env: {state.shape}")
+        print(f"State tensor shape before policy: {state_tensor.shape}")
+
         # Prepare for the next step
         state = next_state
         if done:
@@ -75,18 +141,6 @@ def compute_ppo_loss(
 ):
     """
     Compute PPO loss (policy, value, and entropy components).
-
-    :param policy: PPO policy network.
-    :param states: Preprocessed states (NumPy array or tensor).
-    :param actions: List of actions.
-    :param rewards: List of rewards.
-    :param log_probs: List of log probabilities of actions.
-    :param values: List of value estimates.
-    :param dones: List of episode end indicators.
-    :param gamma: Discount factor.
-    :param epsilon: Clipping parameter for PPO.
-    :param entropy_coef: Weight for entropy bonus.
-    :return: Total loss (policy + value + entropy).
     """
     # Compute returns and advantages
     returns = []
@@ -101,8 +155,16 @@ def compute_ppo_loss(
     std_adv = advantages.std() + 1e-8  # Avoid division by zero
     advantages = (advantages - advantages.mean()) / std_adv
 
-    # Convert states and actions to tensors
-    state_tensor = torch.tensor(states, dtype=torch.float32).view(len(states), -1)
+    # Log advantage stats
+    logging.info(
+        f"Advantages mean: {advantages.mean().item():.4f}, std: {advantages.std().item():.4f}"
+    )
+
+    # Reshape states back to (B, C, H, W)
+    batch_size = len(states)
+    state_tensor = torch.tensor(states, dtype=torch.float32).view(batch_size, 1, 150, 200)
+
+    # Convert actions to tensor
     action_tensor = torch.tensor(actions, dtype=torch.long)
 
     # Forward pass through the policy
@@ -110,8 +172,11 @@ def compute_ppo_loss(
     action_distribution = torch.distributions.Categorical(logits=policy_logits)
     new_log_probs = action_distribution.log_prob(action_tensor)
 
+    # Handle log_probs dtype explicitly
+    log_probs_tensor = torch.tensor(log_probs, dtype=new_log_probs.dtype)
+
     # Policy loss (clipped surrogate objective)
-    ratios = torch.exp(new_log_probs - torch.tensor(log_probs))
+    ratios = torch.exp(new_log_probs - log_probs_tensor)
     clipped_ratios = torch.clamp(ratios, 1 - epsilon, 1 + epsilon)
     policy_loss = -torch.min(ratios * advantages, clipped_ratios * advantages).mean()
 
@@ -123,6 +188,7 @@ def compute_ppo_loss(
 
     # Log individual loss components
     logging.info(f"Policy Loss: {policy_loss.item():.4f} | Value Loss: {value_loss.item():.4f} | Entropy: {entropy.item():.4f}")
+    logging.info(f"Entropy Coefficient: {entropy_coef}")
 
     # Total loss
     total_loss = policy_loss + 0.5 * value_loss - entropy_coef * entropy

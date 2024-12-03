@@ -15,7 +15,7 @@ import enter_game
 import safari_operations
 from ppo_model import PPOAgent, collect_rollouts, update_policy
 import torch.optim as optim
-import config_handler
+import config_handler as config_handler
 
 # Load configuration
 config = config_handler.load_config("game_config.json")
@@ -88,9 +88,26 @@ def main():
         logging.info("Initializing FPAGame environment...")
         env = FPAGame(adjusted_game_location, safari_process=safari_process, server_process=server_process)
 
+        # # Initialize PPO policy and optimizer
+        # input_dim = config['down_scaled']['width'] * config['down_scaled']['height']
+        # policy = PPOAgent(input_dim=input_dim, output_dim=env.action_space.n)
+        # optimizer = optim.Adam(policy.parameters(), lr=3e-4)
+        
         # Initialize PPO policy and optimizer
-        input_dim = config['down_scaled']['width'] * config['down_scaled']['height']
-        policy = PPOAgent(input_dim=input_dim, output_dim=env.action_space.n)
+        input_channels = 1  # Assuming grayscale image, adjust to 3 if RGB
+        input_height = config['down_scaled']['height']  # Height of the resized observation
+        input_width = config['down_scaled']['width']    # Width of the resized observation
+        output_dim = env.action_space.n  # Number of possible actions in the environment
+
+        # Create the PPO policy with convolutional layers
+        policy = PPOAgent(
+            input_channels=input_channels,
+            input_height=input_height,
+            input_width=input_width,
+            output_dim=output_dim
+        )
+
+        # Optimizer for the policy
         optimizer = optim.Adam(policy.parameters(), lr=3e-4)
 
         # Training loop
