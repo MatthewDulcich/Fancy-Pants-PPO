@@ -4,7 +4,7 @@ import pyautogui
 import mss
 import cv2
 import traceback
-import json
+import logging
 from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 from collections import deque
@@ -30,7 +30,14 @@ class FPAGame(Env):
         self.total_reward = 0  # Initialize total reward
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
-        self.template = cv2.imread("swirly.png")
+        self.template = cv2.imread("fpa_swirly_template.png", cv2.IMREAD_GRAYSCALE)  # Load the swirly template
+
+        # Add the correct template in grayscale
+        self.door_template = cv2.imread("fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
+
+        # Store recent full-res grayscale observations
+        self.recent_full_res_observations = deque(maxlen=5)  # Store the last 5 observations
+
         self.server_process = server_process  # Add server process
         self.safari_process = safari_process  # Add Safari process
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
@@ -51,30 +58,31 @@ class FPAGame(Env):
             1: 'right',        # press: Right
             2: 's',            # press: Jump
             3: 'down',         # press: Duck
-            4: 'up',
+            4: 'up',           # press: Up
             5: 'no_action'     # No-op
         }
 
         key = action_map[action]
-        # print(f"Performing action: {action}, Key: {key}")
 
         # Perform the action
-        if key != 4:
+        if key != "no_action":
             self.key_toggle(key)
 
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
-        # print(new_observation.shape, original_scale_frame.shape) # TODO: original_scale_frame is getting doubled
+
+        # Store the original scale frame in the deque
+        self.recent_full_res_observations.append(original_scale_frame)
 
         # Ensure prev_observation is initialized
         if self.prev_observation is None:
             self.prev_observation = new_observation
 
         # Detect swirlies
-        _, current_swirlies, collected_swirlies = track_swirlies(original_scale_frame, self.template, self.prev_swirlies)
+        _, current_swirlies, collected_swirlies = track_swirlies(
+            original_scale_frame, self.template, self.prev_swirlies
+        )
         self.prev_swirlies = current_swirlies
-        
-        # print(f"Swirlie Reward: {"num_swirlies"}, Current Swirlies: {len(current_swirlies)}, Collected Swirlies: {collected_swirlies}")
 
         # Calculate frame difference
         frame_diff = round(np.mean(np.abs(self.prev_observation - new_observation)))
@@ -96,11 +104,9 @@ class FPAGame(Env):
         if self.get_done():
             if self.entered_wrong_door():
                 reward -= 1000  # Penalize for entering the wrong door
-                pass
             else:
-                print(f"Reward received for completing the level: {reward}")
-                reward += 100  # Ensure this is additive to keep previous rewards
-                done = True
+                reward += 1000  # Reward for completing the level
+            done = True
         else:
             done = False
 
@@ -113,21 +119,42 @@ class FPAGame(Env):
         self.rewards_list.append(reward)
 
         # Store relevant info in info dict
-        # Store relevant info in info dict
         info = {
-            "action": action,  # Action taken
-            "swirlies detected": len(current_swirlies),  # Number of swirlies detected
-            "swirlies collected": collected_swirlies,  # Number of swirlies collected
-            "swirlies reward": swirlie_reward,  # Reward for collecting swirlies
-            "frame difference": frame_diff,  # Difference between frames
-            "done": done,  # Whether the episode is done
-            "episode reward": reward,  # Reward for the current episode
-            "total reward": self.total_reward,  # Total accumulated reward
-            "last 10 rewards": list(self.rewards_list)[-10:]  # List of the last ten rewards for each step
+            "action": action,
+            "swirlies detected": len(current_swirlies),
+            "swirlies collected": collected_swirlies,
+            "swirlies reward": swirlie_reward,
+            "frame difference": frame_diff,
+            "done": done,
+            "episode reward": reward,
+            "total reward": self.total_reward,
+            "last 10 rewards": list(self.rewards_list)[-10:]
         }
 
         return new_observation, reward, done, info
 
+    def entered_wrong_door(self):
+        """
+        Check if the agent entered the wrong door by comparing recent observations
+        with the door template.
+        """
+        if not self.door_template:
+            logging.error("Door template is missing. Cannot check for wrong door entry.")
+            return False
+
+        for observation in self.recent_full_res_observations:
+            # Match template using OpenCV
+            result = cv2.matchTemplate(observation, self.door_template, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, _ = cv2.minMaxLoc(result)
+
+            # Define a similarity threshold (adjust as needed)
+            similarity_threshold = 0.8
+            if max_val >= similarity_threshold:
+                logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
+                return True
+
+        return False
+    
     def reset(self):
         """
         Reset the environment by restarting the Ruffle server and Safari process.
