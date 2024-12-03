@@ -177,3 +177,5 @@ step*
 episode*
 
 .DS_Store
+
+Model\ Checkpoints/
