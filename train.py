@@ -125,7 +125,7 @@ def main():
             print(f"Starting episode {episode_count}")
 
             # Collect rollouts
-            states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=256)
+            states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=1024)
             logging.info(f"Collected rollouts: {len(states)} steps")
             print(f"Collected rollouts: {len(states)} steps")
 
