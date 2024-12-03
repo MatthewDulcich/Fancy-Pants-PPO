@@ -42,15 +42,15 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
     collected_swirlies = 0
     
     # Define the size of the box
-    box_size = 10
+    box_size = 7
     
     # Define the frame rectangle (e.g., 3% margin from each side)
     margin = 0.03
     frame_rect = (
         int(observation.shape[1] * margin),  # left
-        int(observation.shape[0] * margin),  # top
+        int(observation.shape[0] * (margin + 0.02)),  # top
         int(observation.shape[1] * (1 - margin)),  # right
-        int(observation.shape[0] * (1 - margin - 0.05))  # bottom
+        int(observation.shape[0] * (1 - margin - 0.07))  # bottom
     )
     
     if print_to_terminal:
@@ -97,7 +97,7 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
         overlap_ratio = intersection_area / swirly_area
         
         # Check if the swirly is within the frame rectangle
-        if overlap_ratio >= 0.25:
+        if overlap_ratio >= 0.75:
             # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
             if print_to_terminal:
                 cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
@@ -117,16 +117,23 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
         
         row_ind, col_ind = linear_sum_assignment(cost_matrix)
         
-        for i in range(len(prev_swirlies)):
+        for i, prev_pt in enumerate(prev_swirlies):
             if i not in row_ind:
-                # Check if the swirly is off screen
-                if frame_rect[0] <= prev_swirlies[i][0] <= frame_rect[2] and frame_rect[1] <= prev_swirlies[i][1] <= frame_rect[3]:
+                # Check if the swirly was on screen and is now off screen
+                if frame_rect[0] <= prev_pt[0] <= frame_rect[2] and frame_rect[1] <= prev_pt[1] <= frame_rect[3]:
                     collected_swirlies += 1
+
+        for i, j in zip(row_ind, col_ind):
+            # Check if the swirly was on screen and is now off screen
+            if cost_matrix[i, j] < box_size:
+                if frame_rect[0] <= prev_swirlies[i][0] <= frame_rect[2] and frame_rect[1] <= prev_swirlies[i][1] <= frame_rect[3]:
+                    if not (frame_rect[0] <= current_swirlies[j][0] <= frame_rect[2] and frame_rect[1] <= current_swirlies[j][1] <= frame_rect[3]):
+                        collected_swirlies += 1
     
-    num_swirlies = collected_swirlies # * 10  # Assign a num_swirlies for each swirly collected
+    num_swirlies = len(current_swirlies)  # Number of detected swirlies
     # Print the number of swirlies detected
     if print_to_terminal:
-        print(f"Number of swirlies detected: {len(indices)}")
+        print(f"Number of swirlies detected: {num_swirlies}")
         print(f"Number of swirlies collected: {collected_swirlies}")
     
         # Display the observation with detected swirlies (for visualization)
@@ -158,10 +165,13 @@ if __name__ == "__main__":
     
     # Loop through each observation and track swirlies
     for i, observation in enumerate(observations):
-        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(observation, template, prev_swirlies, print_to_terminal=True)
-        print(f"Observation {i+1}:")
-        print(f"num_swirlies: {num_swirlies}")
-        print(f"Collected Swirlies: {collected_swirlies}")
+        gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
+
+        reward, current_swirlies, collected_swirlies = track_swirlies(gray_observation, template, prev_swirlies, print_to_terminal=True)
+        print(f"\nObservation {i+1}:")
+        print(f"reward: {reward}")
+        print(f"Current Swirlies: {len(current_swirlies)}")
+        print(f"Collected Swirlies: {collected_swirlies}\n\n")
         
         # Update previous swirlies list
         prev_swirlies = current_swirlies

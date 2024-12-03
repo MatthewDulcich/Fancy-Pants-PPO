@@ -71,10 +71,10 @@ class FPAGame(Env):
             self.prev_observation = new_observation
 
         # Detect swirlies
-        num_swirlies, current_swirlies, collected_swirlies = track_swirlies(original_scale_frame, self.template, self.prev_swirlies)
+        _, current_swirlies, collected_swirlies = track_swirlies(original_scale_frame, self.template, self.prev_swirlies)
         self.prev_swirlies = current_swirlies
         
-        print(f"Swirlies detected: {num_swirlies}, Collected: {collected_swirlies}, Total: {len(current_swirlies)}")
+        # print(f"Swirlie Reward: {"num_swirlies"}, Current Swirlies: {len(current_swirlies)}, Collected Swirlies: {collected_swirlies}")
 
         # Calculate frame difference
         frame_diff = round(np.mean(np.abs(self.prev_observation - new_observation)))
@@ -112,7 +112,7 @@ class FPAGame(Env):
         # Store relevant info in info dict
         info = {
             "action": action,  # Action taken
-            "swirlies detected": num_swirlies,  # Number of swirlies detected
+            "swirlies detected": len(current_swirlies),  # Number of swirlies detected
             "swirlies collected": collected_swirlies,  # Number of swirlies collected
             "swirlies reward": swirlie_reward,  # Reward for collecting swirlies
             "frame difference": frame_diff,  # Difference between frames

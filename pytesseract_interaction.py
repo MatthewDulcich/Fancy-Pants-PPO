@@ -41,7 +41,7 @@ def get_tab_bar_region(safari_window):
     safari_width = safari_window['width']
 
     # Assume the tab bar is a fixed height
-    tab_bar_height = 25  # Adjust based on macOS Safari's tab bar height
+    tab_bar_height = 27  # Adjust based on macOS Safari's tab bar height
 
     # Define the region for the tab bar
     tab_bar_region = {
