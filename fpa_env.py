@@ -7,6 +7,7 @@ import traceback
 import json
 from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
+from collections import deque
 
 # Script imports
 from track_swirlies import track_swirlies
@@ -27,7 +28,7 @@ class FPAGame(Env):
         self.game_location = game_location  # Set game bounds
         self.prev_observation = None  # Initialize prev_observation
         self.total_reward = 0  # Initialize total reward
-        self.rewards_list = []  # Initialize rewards list
+        self.rewards_list = deque(maxlen=10)  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
         self.template = cv2.imread("swirly.png")
         self.server_process = server_process  # Add server process
@@ -105,7 +106,7 @@ class FPAGame(Env):
 
         # Update total reward and rewards list
         self.total_reward += reward
-        self.rewards_list.append(reward) # TODO: turn this into a long list of rewards, where we replace eac reward with the new one
+        self.rewards_list.append(reward)
 
         # Store relevant info in info dict
         # Store relevant info in info dict
@@ -118,7 +119,7 @@ class FPAGame(Env):
             "done": done,  # Whether the episode is done
             "episode reward": reward,  # Reward for the current episode
             "total reward": self.total_reward,  # Total accumulated reward
-            "last 10 rewards": self.rewards_list[-10:]  # List of the last ten rewards for each step
+            "last 10 rewards": list(self.rewards_list)[-10:]  # List of the last ten rewards for each step
         }
 
         return new_observation, reward, done, info
@@ -131,7 +132,7 @@ class FPAGame(Env):
 
             # Reset total reward and rewards list
             self.total_reward = 0
-            self.rewards_list = []
+            self.rewards_list = deque(maxlen=10)
             
             # Stop existing processes safely
             self.cleanup_resources(self.server_process, self.safari_process)

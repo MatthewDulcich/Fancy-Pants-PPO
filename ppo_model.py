@@ -115,7 +115,11 @@ def collect_rollouts(env, policy, n_steps=2048):
         log_prob = action_distribution.log_prob(action)  # Log probability of the action
 
         # Take the action in the environment
-        next_state, reward, done, _ = env.step(action.item())
+        next_state, reward, done, info = env.step(action.item())
+
+        # Log collected swirlies
+        logging.info(f"Detected swirlies: {info['swirlies detected']}, Collected swirlies: {info['swirlies collected']}")
+
 
         # Store trajectory data
         states.append(state.flatten())  # Preprocessed and flattened
