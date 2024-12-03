@@ -54,7 +54,6 @@ def get_tab_bar_region(safari_window):
     print("Tab Bar Region:", tab_bar_region)
     return tab_bar_region
 
-
 def handle_reload_bar(tab_bar_region):
     """
     Detects and dismisses the 'This webpage was reloaded' bar using the tab bar region.

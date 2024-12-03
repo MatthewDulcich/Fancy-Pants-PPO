@@ -191,11 +191,11 @@ class FPAGame(Env):
             "width": self.game_location['width'],
             "height": self.game_location['height']
         }
-        print("Monitor:", monitor)
+        # print("Monitor:", monitor)
 
         # Capture the game region using persistent mss context
         screenshot = self.sct.grab(monitor)
-        print("Screenshot shape:", screenshot.size)
+        # print("Screenshot shape:", screenshot.size)
 
         # Convert to numpy array and keep only the grayscale channel
         frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)

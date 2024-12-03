@@ -61,7 +61,7 @@ class PPOAgent(nn.Module):
         return int(torch.prod(torch.tensor(conv_output.shape[1:])).item())  # Flattened size
 
     def forward(self, x):
-        print(f"Input shape in forward: {x.shape}")  # Debugging input shape
+        # print(f"Input shape in forward: {x.shape}")  # Debugging input shape
         if len(x.shape) == 4:  # Input is (B, C, H, W)
             pass
         elif len(x.shape) == 3:  # (H, W, C)
@@ -125,8 +125,8 @@ def collect_rollouts(env, policy, n_steps=2048):
         values.append(state_value.item())
         dones.append(done)
 
-        print(f"Observation shape from env: {state.shape}")
-        print(f"State tensor shape before policy: {state_tensor.shape}")
+        # print(f"Observation shape from env: {state.shape}")
+        # print(f"State tensor shape before policy: {state_tensor.shape}")
 
         # Prepare for the next step
         state = next_state
