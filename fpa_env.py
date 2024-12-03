@@ -34,7 +34,8 @@ class FPAGame(Env):
         self.server_process = server_process  # Add server process
         self.safari_process = safari_process  # Add Safari process
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
-
+        self.repeat_action_window = 5  # Window size for checking repeated actions
+        self.recent_actions = deque(maxlen=5)  # Track recent actions
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -59,12 +60,11 @@ class FPAGame(Env):
         # print(f"Performing action: {action}, Key: {key}")
 
         # Perform the action
-        if key != 4:
+        if key != 'no_action':
             self.key_toggle(key)
 
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
-        # print(new_observation.shape, original_scale_frame.shape) # TODO: original_scale_frame is getting doubled
 
         # Ensure prev_observation is initialized
         if self.prev_observation is None:
@@ -104,11 +104,17 @@ class FPAGame(Env):
         swirlie_reward = 10 * collected_swirlies
         reward += swirlie_reward
 
+        # Penalty for repeated actions
+        if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
+            reward -= 5  # Adjust the penalty value as needed
+
+        # Update recent actions
+        self.recent_actions.append(action)
+
         # Update total reward and rewards list
         self.total_reward += reward
         self.rewards_list.append(reward)
 
-        # Store relevant info in info dict
         # Store relevant info in info dict
         info = {
             "action": action,  # Action taken
@@ -133,6 +139,7 @@ class FPAGame(Env):
             # Reset total reward and rewards list
             self.total_reward = 0
             self.rewards_list = deque(maxlen=10)
+            self.recent_actions.clear()  # Clear recent actions
             
             # Stop existing processes safely
             self.cleanup_resources(self.server_process, self.safari_process)
