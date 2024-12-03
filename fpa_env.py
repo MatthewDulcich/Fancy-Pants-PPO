@@ -23,7 +23,7 @@ class FPAGame(Env):
     def __init__(self, game_location, server_process=None, safari_process=None):
         super().__init__()
         self.observation_space = Box(low=0, high=255, shape=(1, 400, 550), dtype=np.uint8)
-        self.action_space = Discrete(5)  # Number of actions
+        self.action_space = Discrete(6)  # Number of actions
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
         self.prev_observation = None  # Initialize prev_observation
@@ -34,7 +34,6 @@ class FPAGame(Env):
         self.server_process = server_process  # Add server process
         self.safari_process = safari_process  # Add Safari process
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
-
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -52,7 +51,8 @@ class FPAGame(Env):
             1: 'right',        # press: Right
             2: 's',            # press: Jump
             3: 'down',         # press: Duck
-            4: 'no_action'     # No-op
+            4: 'up',
+            5: 'no_action'     # No-op
         }
 
         key = action_map[action]
@@ -94,9 +94,13 @@ class FPAGame(Env):
 
         # Reward for completing the level
         if self.get_done():
-            print(f"Reward received for completing the level: {reward}")
-            reward += 100  # Ensure this is additive to keep previous rewards
-            done = True
+            if self.entered_wrong_door():
+                reward -= 1000  # Penalize for entering the wrong door
+                pass
+            else:
+                print(f"Reward received for completing the level: {reward}")
+                reward += 100  # Ensure this is additive to keep previous rewards
+                done = True
         else:
             done = False
 
@@ -172,15 +176,6 @@ class FPAGame(Env):
             traceback.print_exc()
             raise
     
-    # Visualize the game (get observation)
-    def render(self):
-        pass
-    
-    # Not used in this implementation
-    # Close the observation (closes render)
-    def close(self):
-        pass
-    
     # Get the game window
     def get_observation(self): 
         # TODO: Fix bug between the monitor and screenshot grab, depending on size of screen the screenshot is doubled, my
@@ -199,32 +194,34 @@ class FPAGame(Env):
         # print("Screenshot shape:", screenshot.size)
 
         # Convert to numpy array and keep only the grayscale channel
-        frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)
+        rgb_frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)
 
         # Convert to grayscale
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        grayscale_frame = cv2.cvtColor(rgb_frame, cv2.COLOR_BGR2GRAY)
         
         # Downscale the grayscale frame
         downscaled_frame = cv2.resize(
-            frame, 
+            grayscale_frame, 
             (config['down_scaled']['width'], config['down_scaled']['height']), 
             interpolation=cv2.INTER_NEAREST
         )
 
         # Add channel dimension for compatibility
-        observation = np.expand_dims(downscaled_frame, axis=0)
+        downscaled_frame = np.expand_dims(downscaled_frame, axis=0)
 
-        return observation, frame
+        return downscaled_frame, grayscale_frame
         
+    def entered_wrong_door(self):
+        pass
+    
     def get_done(self):
         """
         Check if the screen is black (end of level).
         """
         # Directly capture observation
-        observation, _ = self.get_observation()
+        downscaled_obs, grayscale_obs = self.get_observation()
 
-        # Use numpy operations to calculate average intensity
-        avg_intensity = observation.mean()  # More efficient than np.mean(observation)
+        avg_intensity = downscaled_obs.mean()  # More efficient than np.mean(observation)
 
         # Optimize threshold comparison
         is_black_screen = avg_intensity < 10  # Fine-tune threshold as needed
