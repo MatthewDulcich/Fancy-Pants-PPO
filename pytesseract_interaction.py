@@ -25,10 +25,10 @@ def extract_text_from_region(region):
     """
     Uses OCR to extract text from a specified screen region.
     """
+    print("Extracting text from region:", region)
     gray_image = capture_region(region)
     detected_text = pytesseract.image_to_string(gray_image).strip()
     return detected_text
-
 
 # --- OCR and Interaction Functions ---
 
@@ -41,7 +41,7 @@ def get_tab_bar_region(safari_window):
     safari_width = safari_window['width']
 
     # Assume the tab bar is a fixed height
-    tab_bar_height = 40  # Adjust based on macOS Safari's tab bar height
+    tab_bar_height = 27  # Adjust based on macOS Safari's tab bar height
 
     # Define the region for the tab bar
     tab_bar_region = {
@@ -50,6 +50,15 @@ def get_tab_bar_region(safari_window):
         'width': safari_width,
         'height': tab_bar_height
     }
+
+    # save the tab bar region as a screenshot image
+    screenshot = ImageGrab.grab(bbox=(
+        tab_bar_region['left'],
+        tab_bar_region['top'],
+        tab_bar_region['left'] + tab_bar_region['width'],
+        tab_bar_region['top'] + tab_bar_region['height']
+    ))
+    screenshot.save("tab_bar_region.png")
 
     print("Tab Bar Region:", tab_bar_region)
     return tab_bar_region
