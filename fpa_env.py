@@ -23,7 +23,7 @@ class FPAGame(Env):
     def __init__(self, game_location, server_process=None, safari_process=None):
         super().__init__()
         self.observation_space = Box(low=0, high=255, shape=(1, 400, 550), dtype=np.uint8)
-        self.action_space = Discrete(5)  # Number of actions
+        self.action_space = Discrete(6)  # Number of actions
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
         self.prev_observation = None  # Initialize prev_observation
@@ -52,7 +52,8 @@ class FPAGame(Env):
             1: 'right',        # press: Right
             2: 's',            # press: Jump
             3: 'down',         # press: Duck
-            4: 'no_action'     # No-op
+            4: 'up',           # press: Up
+            5: 'no_action'     # No-op
         }
 
         key = action_map[action]
