@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False):
+def track_swirlies(observation, template, prev_swirlies, prev_swirlies_ids=None, next_id=0, print_to_terminal=False):
     """
     Tracks swirlies in the given observation using template matching.
     
@@ -10,26 +10,34 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
         observation (numpy.ndarray): The current frame of the game.
         template (numpy.ndarray): The template image of the swirly to match.
         prev_swirlies (list): List of positions of swirlies in the previous frame.
+        prev_swirlies_ids (list): List of unique identifiers for swirlies in the previous frame.
+        next_id (int): The next available unique identifier for a new swirly.
         print_to_terminal (bool): Flag to control printing to the terminal.
     
     Returns:
         num_swirlies (int): The num_swirlies based on the presence of swirlies.
         current_swirlies (list): List of positions of swirlies in the current frame.
         collected_swirlies (int): Number of swirlies collected.
+        current_swirlies_ids (list): List of unique identifiers for swirlies in the current frame.
+        next_id (int): The next available unique identifier for a new swirly.
     """
+    if prev_swirlies_ids is None:
+        prev_swirlies_ids = []
+
     # Ensure observation is a valid NumPy array
     observation = np.array(observation, dtype=np.uint8)
     
-    # Convert the observation to grayscale
-    # gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
-    # print(gray_observation.shape)
+    # Convert the observation to grayscale if it's not already
+    if len(observation.shape) == 3:
+        observation_gray = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
+    else:
+        observation_gray = observation
+
     # Convert the template to grayscale
     gray_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-    # print(gray_observation.shape)
     
-    # observation needs to be ~400, 550
     # Perform template matching
-    result = cv2.matchTemplate(observation, gray_template, cv2.TM_CCOEFF_NORMED)
+    result = cv2.matchTemplate(observation_gray, gray_template, cv2.TM_CCOEFF_NORMED)
     
     # Define a threshold for detecting the swirly
     threshold = 0.8
@@ -73,40 +81,15 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
     # Apply Non-Maximum Suppression (NMS)
     indices = cv2.dnn.NMSBoxes(boxes.tolist(), confidences.tolist(), score_threshold=threshold, nms_threshold=0.3)
     
-    # Initialize list of current swirlies
+    # Initialize list of current swirlies and their unique identifiers
     current_swirlies = []
+    current_swirlies_ids = []
     
     # Check if any swirlies are on screen
     for i in indices:
         box = boxes[i]
         pt = (box[0], box[1])
         current_swirlies.append(pt)
-        
-        # Calculate the intersection area with the frame rectangle
-        x_left = max(frame_rect[0], pt[0])
-        y_top = max(frame_rect[1], pt[1])
-        x_right = min(frame_rect[2], pt[0] + box_size)
-        y_bottom = min(frame_rect[3], pt[1] + box_size)
-        
-        if x_right < x_left or y_bottom < y_top:
-            intersection_area = 0
-        else:
-            intersection_area = (x_right - x_left) * (y_bottom - y_top)
-        
-        swirly_area = box_size * box_size
-        overlap_ratio = intersection_area / swirly_area
-        
-        # Check if the swirly is within the frame rectangle
-        if overlap_ratio >= 0.75:
-            # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
-            if print_to_terminal:
-                cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
-                print(f"Swirly on screen at: {pt}")
-        else:
-            # Draw a 24x24 pixel rectangle around the detected swirly (for visualization)
-            if print_to_terminal:
-                cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 0, 255), 2)
-                print(f"Swirly off screen at: {pt}")
     
     # Calculate collected swirlies using the Hungarian algorithm
     if prev_swirlies:
@@ -117,18 +100,36 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
         
         row_ind, col_ind = linear_sum_assignment(cost_matrix)
         
-        for i, prev_pt in enumerate(prev_swirlies):
-            if i not in row_ind:
-                # Check if the swirly was on screen and is now off screen
-                if frame_rect[0] <= prev_pt[0] <= frame_rect[2] and frame_rect[1] <= prev_pt[1] <= frame_rect[3]:
-                    collected_swirlies += 1
-
+        matched_prev_ids = set()
+        matched_curr_ids = set()
+        
         for i, j in zip(row_ind, col_ind):
-            # Check if the swirly was on screen and is now off screen
             if cost_matrix[i, j] < box_size:
+                current_swirlies_ids.append(prev_swirlies_ids[i])
+                matched_prev_ids.add(i)
+                matched_curr_ids.add(j)
+        
+        for i in range(len(prev_swirlies)):
+            if i not in matched_prev_ids:
+                # Check if the swirly was on screen and is now off screen or disappeared
                 if frame_rect[0] <= prev_swirlies[i][0] <= frame_rect[2] and frame_rect[1] <= prev_swirlies[i][1] <= frame_rect[3]:
-                    if not (frame_rect[0] <= current_swirlies[j][0] <= frame_rect[2] and frame_rect[1] <= current_swirlies[j][1] <= frame_rect[3]):
-                        collected_swirlies += 1
+                    collected_swirlies += 1
+        
+        for j in range(len(current_swirlies)):
+            if j not in matched_curr_ids:
+                current_swirlies_ids.append(next_id)
+                next_id += 1
+    else:
+        for pt in current_swirlies:
+            current_swirlies_ids.append(next_id)
+            next_id += 1
+    
+    # Draw rectangles and labels for visualization
+    if print_to_terminal:
+        for pt, swirly_id in zip(current_swirlies, current_swirlies_ids):
+            cv2.rectangle(observation, pt, (pt[0] + box_size, pt[1] + box_size), (0, 255, 0), 2)
+            cv2.putText(observation, str(swirly_id), (pt[0], pt[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            print(f"Swirly on screen at: {pt} with ID: {swirly_id}")
     
     num_swirlies = len(current_swirlies)  # Number of detected swirlies
     # Print the number of swirlies detected
@@ -141,7 +142,7 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
         cv2.waitKey(0)  # Wait indefinitely until a key is pressed
         cv2.destroyAllWindows()
     
-    return num_swirlies, current_swirlies, collected_swirlies
+    return num_swirlies, current_swirlies, collected_swirlies, current_swirlies_ids, next_id
 
 # Example usage
 if __name__ == "__main__":
@@ -160,18 +161,23 @@ if __name__ == "__main__":
     
     template = cv2.imread("swirly.png")
     
-    # Initialize previous swirlies list
+    # Initialize previous swirlies list and their unique identifiers
     prev_swirlies = []
+    prev_swirlies_ids = []
+    next_id = 0
     
     # Loop through each observation and track swirlies
-    for i, observation in enumerate(observations):
+    for i, observation in enumerate(observations2):
         gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
 
-        reward, current_swirlies, collected_swirlies = track_swirlies(gray_observation, template, prev_swirlies, print_to_terminal=True)
+        reward, current_swirlies, collected_swirlies, current_swirlies_ids, next_id = track_swirlies(
+            gray_observation, template, prev_swirlies, prev_swirlies_ids, next_id, print_to_terminal=True
+        )
         print(f"\nObservation {i+1}:")
         print(f"reward: {reward}")
         print(f"Current Swirlies: {len(current_swirlies)}")
         print(f"Collected Swirlies: {collected_swirlies}\n\n")
         
-        # Update previous swirlies list
+        # Update previous swirlies list and their unique identifiers
         prev_swirlies = current_swirlies
+        prev_swirlies_ids = current_swirlies_ids
