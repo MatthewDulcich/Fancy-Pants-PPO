@@ -1,10 +1,8 @@
 import logging
 import traceback
-import cv2
-import random
 import time
-import json
 from torch import save
+import numpy as np
 import os
 
 # Import helper functions from other scripts
@@ -80,32 +78,20 @@ def main():
             logging.error("Failed to fetch canvas info. Exiting.")
             raise ValueError("Failed to fetch canvas info. Exiting.")
 
-        game_location = {
-            'top': int(canvas_info['top']),
-            'left': int(canvas_info['left']),
-            'width': int(canvas_info['width']),
-            'height': int(canvas_info['height']),
-        }
-
         # Adjust game location
         safari_coords = safari_operations.get_safari_window_coordinates()
         if not safari_coords:
             raise RuntimeError("Failed to fetch Safari window coordinates. Exiting.")
         adjusted_game_location = {
-            'top': game_location['top'] + safari_coords['top'] + 60,
-            'left': game_location['left'] + safari_coords['left'],
-            'width': game_location['width'],
-            'height': game_location['height'],
+            'top': canvas_info['top'] + safari_coords['top'] + 60,
+            'left': canvas_info['left'] + safari_coords['left'],
+            'width': canvas_info['width'],
+            'height': canvas_info['height'],
         }
 
         # Initialize FPAGame environment
         logging.info("Initializing FPAGame environment...")
         env = FPAGame(adjusted_game_location, safari_process=safari_process, server_process=server_process)
-
-        # # Initialize PPO policy and optimizer
-        # input_dim = config['down_scaled']['width'] * config['down_scaled']['height']
-        # policy = PPOAgent(input_dim=input_dim, output_dim=env.action_space.n)
-        # optimizer = optim.Adam(policy.parameters(), lr=3e-4)
         
         # Initialize PPO policy and optimizer
         input_channels = 1  # Assuming grayscale image, adjust to 3 if RGB
@@ -122,7 +108,7 @@ def main():
         )
 
         # Optimizer for the policy
-        optimizer = optim.Adam(policy.parameters(), lr=3e-4)
+        optimizer = optim.Adam(policy.parameters(), lr=1e-3)
 
         # Training loop
         logging.info("Starting training with timeout-based reset...")
@@ -141,7 +127,12 @@ def main():
             print(f"Starting episode {episode_count}")
 
             # Collect rollouts
-            states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=1024)
+            states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=config['rollout_steps'])
+
+            # Normalize rewards
+            rewards = np.array(rewards, dtype=np.float32)  # Convert rewards to a NumPy array
+            rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-8)  # Normalize
+            logging.info(f"Normalized rewards: mean={rewards.mean():.4f}, std={rewards.std():.4f}")
             
             if dones[-1]:
                 logging.info("Episode completed successfully.")
