@@ -266,7 +266,7 @@ class FPAGame(Env):
         avg_intensity = downscaled_obs.mean()  # More efficient than np.mean(observation)
 
         # Optimize threshold comparison
-        is_black_screen = avg_intensity < 10  # Fine-tune threshold as needed
+        is_black_screen = avg_intensity < 20  # Fine-tune threshold as needed
         return is_black_screen
 
     def cleanup_resources(self, server_process, safari_process):
