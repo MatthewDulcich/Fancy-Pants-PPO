@@ -21,19 +21,32 @@ import config_handler as config_handler
 config = config_handler.load_config("game_config.json")
 
 # Ensure the logs directory exists
-log_dir = os.path.join(os.getcwd(), 'logs')
-os.makedirs(log_dir, exist_ok=True)
+logs_dir = os.path.join(os.getcwd(), 'logs')
+os.makedirs(logs_dir, exist_ok=True)
+
+current_time = time.strftime("%Y%m%d-%H%M%S")
+log_filename = os.path.join(logs_dir, f"fpa_game_logs_{current_time}.log")
 
 # Configure logging
 logging.basicConfig(
-    filename=os.path.join(log_dir, 'training.log'),
-    level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    filemode='w',  # Overwrite logs for each run
-    force=True  # Force configuration even if logging is already set
+    handlers=[
+        logging.FileHandler(log_filename),  # Logs written to a file with a unique name
+        logging.StreamHandler()  # Logs displayed in the console
+    ],
+    level=logging.INFO  # Set default logging level to INFO
 )
-# Add this explicitly after setting up logging:
-logging.getLogger().handlers[0].flush()
+
+# Set the logging level for the console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.WARNING)  # Only show WARNING or higher in the console
+console_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+
+# Get the root logger and replace its handlers
+logger = logging.getLogger()
+logger.handlers.clear()  # Remove existing handlers
+logger.addHandler(console_handler)  # Add the console handler
+logger.addHandler(logging.FileHandler(log_filename))  # Add the file handler with a unique name
 
 # Define the PPO policy and value networks
 def main():
@@ -64,6 +77,7 @@ def main():
 
         canvas_info = {'top': 0, 'left': 0, 'width': 550, 'height': 400}
         if not canvas_info:
+            logging.error("Failed to fetch canvas info. Exiting.")
             raise ValueError("Failed to fetch canvas info. Exiting.")
 
         game_location = {
@@ -121,24 +135,23 @@ def main():
         
         # Training loop
         while True:
+            logging.info(f"Starting episode {episode_count}")
+
             episode_start_time = time.time()  # Start time for episode
             print(f"Starting episode {episode_count}")
 
             # Collect rollouts
             states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=1024)
-            logging.info(f"Collected rollouts: {len(states)} steps")
-            print(f"Collected rollouts: {len(states)} steps")
+            # print(f"Collected rollouts: {len(states)} steps")
 
             # Update action counts
             for action in actions:
                 action_counts[action] += 1
 
             # Log action distribution
-            logging.info(f"Action Distribution: {action_counts}")
 
             # Update policy
             ppo_loss = update_policy(policy, optimizer, states, actions, rewards, log_probs, values, dones)
-            logging.info(f"PPO Loss: {ppo_loss:.4f}")
 
             # Log reward statistics
             max_reward = max(rewards)
@@ -146,20 +159,11 @@ def main():
             cumulative_reward = sum(rewards)
             avg_reward = cumulative_reward / len(rewards)
 
-            logging.info(
-            f"Episode {episode_count} | Avg Reward: {avg_reward:.2f} | Max Reward: {max_reward:.2f} | " 
-            f"Min Reward: {min_reward:.2f} | Cumulative Reward: {cumulative_reward:.2f}")
-
             # Log last 10 rewards
             last_rewards = rewards[-10:] if len(rewards) >= 10 else rewards
-            logging.info(f"Last 10 Rewards: {last_rewards}")
-
-            # Calculate and log episode duration
-            episode_duration = time.time() - episode_start_time
-            logging.info(f"Episode {episode_count} Duration: {episode_duration:.2f} seconds")
 
             # Save policy periodically
-            if episode_count % 10 == 0:
+            if episode_count % 30 == 0:
                 save_path = os.path.join(models_dir, f"ppo_policy_episode_{episode_count}.pt")
                 save(policy.state_dict(), save_path)
                 logging.info(f"Model saved at Episode {episode_count} to {save_path}")
@@ -167,14 +171,22 @@ def main():
             # Reset if timeout is reached
             if time.time() - start_time > timeout and not dones[-1]:
                 logging.info("Timeout reached. Resetting environment...")
-                # env.reset()
                 start_time = time.time()
 
             episode_count += 1
             print(f"Finished episode {episode_count}")
 
+            logging.info(f"Episode {episode_count} Summary: "
+                f"Avg Reward: {avg_reward:.2f}, "
+                f"Max Reward: {max_reward:.2f}, "
+                f"Min Reward: {min_reward:.2f}, "
+                f"Cumulative Reward: {cumulative_reward:.2f}, "
+                f"Last 10 Rewards: {last_rewards}")
+            logging.info("=" * 100)
+            logging.info("=" * 100)
+
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logging.exception(f"An error occurred during training: {e}")
         traceback.print_exc()
 
     finally:

@@ -25,7 +25,7 @@ def parse_coordinates(output):
     """
     try:
         coordinates = [int(coord) for coord in output.split(", ")]
-        logging.info(f"Parsed Coordinates: {coordinates}")
+        # logging.info(f"Parsed Coordinates: {coordinates}")
         return {
             "left": coordinates[0],
             "top": coordinates[1],
@@ -62,7 +62,7 @@ def adjust_for_menu_bar(safari_window, region, menu_bar_offset=88):
         logging.error("Invalid input: safari_window or region is None.")
         return None
 
-    logging.info(f"Safari Window Coordinates: {safari_window}")
+    # logging.info(f"Safari Window Coordinates: {safari_window}")
     safari_left, safari_top = safari_window['left'], safari_window['top']
 
     return {

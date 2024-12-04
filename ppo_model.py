@@ -5,6 +5,9 @@ import torch.nn as nn
 import torch.optim as optim
 import logging
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 # class PPOAgent(nn.Module):
 #     def __init__(self, input_dim, output_dim):
 #         super(PPOAgent, self).__init__()
@@ -118,7 +121,11 @@ def collect_rollouts(env, policy, n_steps=2048):
         next_state, reward, done, info = env.step(action.item())
 
         # Log collected swirlies
-        logging.info(f"Detected swirlies: {info['swirlies detected']}, Collected swirlies: {info['swirlies collected']}")
+        logging.info(
+            f"Collected swirlies: {info['swirlies collected']} | Total swirlies: {info['swirlies detected']} | "
+            f"Swirles reward: {info['swirlies reward']} | Episode reward: {info['episode reward']} | "
+            f"Last 10 rewards: {info['last 10 rewards']}"
+        )
 
 
         # Store trajectory data

@@ -19,6 +19,9 @@ import config_handler as config_handler
 # Load configuration
 config = config_handler.load_config("game_config.json")
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 class FPAGame(Env):
     def __init__(self, game_location, server_process=None, safari_process=None):
         super().__init__()
@@ -30,7 +33,7 @@ class FPAGame(Env):
         self.total_reward = 0  # Initialize total reward
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
-        self.template = cv2.imread("fpa_swirly_template.png", cv2.IMREAD_GRAYSCALE)  # Load the swirly template
+        self.template = cv2.imread("swirly.png")  # Load the swirly template
 
         # Add the correct template in grayscale
         self.door_template = cv2.imread("fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
@@ -41,6 +44,8 @@ class FPAGame(Env):
         self.server_process = server_process  # Add server process
         self.safari_process = safari_process  # Add Safari process
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
+        self.repeat_action_window = 5  # Window size for checking repeated actions
+        self.recent_actions = deque(maxlen=5)  # Track recent actions
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -65,7 +70,7 @@ class FPAGame(Env):
         key = action_map[action]
 
         # Perform the action
-        if key != "no_action":
+        if key != 'no_action':
             self.key_toggle(key)
 
         # Capture observation after action using `get_observation`
@@ -98,21 +103,33 @@ class FPAGame(Env):
         if frame_diff > frame_diff_threshold:
             reward += round((frame_diff - frame_diff_threshold) * 0.5)
         else:
-            reward -= 1
+            reward -= 5
 
         # Reward for completing the level
-        if self.get_done():
+        if self.check_for_black_screen():
+            logging.info("Entered a door. Checking for wrong door entry...")
             if self.entered_wrong_door():
+                logging.info("Wrong door detected. Penalizing and resetting environment...")
                 reward -= 1000  # Penalize for entering the wrong door
+                done = True  # End the episode
+                self.reset()  # Reset the environment after the penalty
             else:
+                logging.info("Correct door detected. Rewarding...")
                 reward += 1000  # Reward for completing the level
-            done = True
+                done = True  # End the episode
         else:
             done = False
 
         # Reward for collecting swirlies
         swirlie_reward = 10 * collected_swirlies
         reward += swirlie_reward
+
+        # Penalty for repeated actions
+        if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
+            reward -= 5  # Adjust the penalty value as needed
+
+        # Update recent actions
+        self.recent_actions.append(action)
 
         # Update total reward and rewards list
         self.total_reward += reward
@@ -128,7 +145,8 @@ class FPAGame(Env):
             "done": done,
             "episode reward": reward,
             "total reward": self.total_reward,
-            "last 10 rewards": list(self.rewards_list)[-10:]
+            "last 10 rewards": list(self.rewards_list)[-10:],
+            "cumulative reward": sum(self.rewards_list)
         }
 
         return new_observation, reward, done, info
@@ -148,7 +166,7 @@ class FPAGame(Env):
             _, max_val, _, _ = cv2.minMaxLoc(result)
 
             # Define a similarity threshold (adjust as needed)
-            similarity_threshold = 0.8
+            similarity_threshold = 0.6
             if max_val >= similarity_threshold:
                 logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
                 return True
@@ -164,6 +182,7 @@ class FPAGame(Env):
             # Reset total reward and rewards list
             self.total_reward = 0
             self.rewards_list = deque(maxlen=10)
+            self.recent_actions.clear()  # Clear recent actions
             
             # Stop existing processes safely
             self.cleanup_resources(self.server_process, self.safari_process)
@@ -237,13 +256,10 @@ class FPAGame(Env):
         downscaled_frame = np.expand_dims(downscaled_frame, axis=0)
 
         return downscaled_frame, grayscale_frame
-        
-    def entered_wrong_door(self):
-        pass
     
-    def get_done(self):
+    def check_for_black_screen(self):
         """
-        Check if the screen is black (end of level).
+        Check if the screen is black (entered a door, game over, change level, etc.)
         """
         # Directly capture observation
         downscaled_obs, grayscale_obs = self.get_observation()
