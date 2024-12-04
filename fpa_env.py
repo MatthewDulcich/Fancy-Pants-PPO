@@ -8,6 +8,7 @@ import logging
 from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 from collections import deque
+import os
 
 # Script imports
 from track_swirlies import track_swirlies
@@ -46,6 +47,17 @@ class FPAGame(Env):
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
         self.repeat_action_window = 5  # Window size for checking repeated actions
         self.recent_actions = deque(maxlen=5)  # Track recent actions
+
+        # Load checkpoint images
+        self.checkpoints = []
+        self.checkpoint_rewards = set()  # Track rewarded checkpoints
+        checkpoint_dir = "checkpoints"
+        for i in range(1, 13):
+            checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
+            checkpoint_image = cv2.imread(checkpoint_path)
+            if checkpoint_image is not None:
+                checkpoint_image = cv2.cvtColor(checkpoint_image, cv2.COLOR_BGR2GRAY)
+                self.checkpoints.append(checkpoint_image)
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -127,6 +139,11 @@ class FPAGame(Env):
         swirlie_reward = 10 * collected_swirlies
         reward += swirlie_reward
 
+        # Reward for reaching a checkpoint
+        checkpoint_reward, checkpoint_id = self.checkpoint_matching(original_scale_frame)
+        reward += checkpoint_reward
+        # print(f"Checkpoint reward: {checkpoint_reward}")
+
         # Penalty for repeated actions
         if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
             reward -= 5  # Adjust the penalty value as needed
@@ -144,6 +161,8 @@ class FPAGame(Env):
             "swirlies detected": len(current_swirlies),
             "swirlies collected": collected_swirlies,
             "swirlies reward": swirlie_reward,
+            "checkpoint id": checkpoint_id,
+            "checkpoint reward": checkpoint_reward,
             "frame difference": frame_diff,
             "done": done,
             "episode reward": reward,
@@ -182,6 +201,18 @@ class FPAGame(Env):
             self.total_reward = 0
             self.rewards_list = deque(maxlen=10)
             self.recent_actions.clear()  # Clear recent actions
+
+            # Reset checkpoint list
+            # Load checkpoint images
+            self.checkpoints = []
+            self.checkpoint_rewards = set()  # Track rewarded checkpoints
+            checkpoint_dir = "checkpoints"
+            for i in range(1, 13):
+                checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
+                checkpoint_image = cv2.imread(checkpoint_path)
+                if checkpoint_image is not None:
+                    checkpoint_image = cv2.cvtColor(checkpoint_image, cv2.COLOR_BGR2GRAY)
+                    self.checkpoints.append(checkpoint_image)
             
             # Stop existing processes safely
             self.cleanup_resources(self.server_process, self.safari_process)
@@ -266,8 +297,55 @@ class FPAGame(Env):
         avg_intensity = downscaled_obs.mean()  # More efficient than np.mean(observation)
 
         # Optimize threshold comparison
-        is_black_screen = avg_intensity < 10  # Fine-tune threshold as needed
+        is_black_screen = avg_intensity < 20  # Fine-tune threshold as needed
         return is_black_screen
+    
+    def checkpoint_matching(self, observation, print_and_save=False):
+        """
+        Perform template matching for checkpoints and return the reward if a checkpoint is matched.
+        
+        Args:
+            observation (numpy.ndarray): The current frame of the game.
+        
+        Returns:
+            checkpoint_reward (int): The reward for reaching a checkpoint.
+        """
+        checkpoint_reward = 0
+        threshold = 0.8  # Adjust the threshold as needed
+        checkpoint_id = None
+
+        # Ensure observation is a valid NumPy array
+        gray_observation = np.array(observation, dtype=np.uint8)
+
+        for idx, checkpoint in enumerate(self.checkpoints):
+            # Perform template matching
+            result = cv2.matchTemplate(gray_observation, checkpoint, cv2.TM_CCOEFF_NORMED)
+            
+            # Find all locations where the match exceeds the threshold
+            _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+            if max_val >= threshold and idx not in self.checkpoint_rewards:
+                self.checkpoint_rewards.add(idx)
+                checkpoint_reward += 100  # Adjust the reward value as needed
+                checkpoint_id = idx + 1
+                if print_and_save:
+                    print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
+
+                    # Save observations with matching checkpoints drawn
+                    annotated_dir = "annotated_images"
+                    os.makedirs(annotated_dir, exist_ok=True)
+
+                    # Draw a rectangle around the matched region
+                    top_left = max_loc
+                    bottom_right = (top_left[0] + checkpoint.shape[1], top_left[1] + checkpoint.shape[0])
+                    annotated_image = observation.copy()
+                    cv2.rectangle(annotated_image, top_left, bottom_right, (0, 255, 0), 2)
+
+                    # Save the annotated image
+                    annotated_path = os.path.join(annotated_dir, f"annotated_checkpoint_{idx + 1}.png")
+                    cv2.imwrite(annotated_path, annotated_image)
+
+        return checkpoint_reward, checkpoint_id
 
     def cleanup_resources(self, server_process, safari_process):
         """

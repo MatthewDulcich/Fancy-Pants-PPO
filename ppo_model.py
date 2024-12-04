@@ -8,24 +8,6 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# class PPOAgent(nn.Module):
-#     def __init__(self, input_dim, output_dim):
-#         super(PPOAgent, self).__init__()
-#         self.shared_layers = nn.Sequential(
-#             nn.Linear(input_dim, 128),
-#             nn.ReLU(), # TODO: look into conv layers
-#             nn.Linear(128, 128),
-#             nn.ReLU(),
-#         )
-#         self.policy_head = nn.Linear(128, output_dim)  # Output probabilities for actions
-#         self.value_head = nn.Linear(128, 1)           # Output state value
-
-#     def forward(self, x):
-#         x = self.shared_layers(x)
-#         policy_logits = self.policy_head(x)
-#         state_value = self.value_head(x)
-#         return policy_logits, state_value
-
 class PPOAgent(nn.Module):
     def __init__(self, input_channels, input_height, input_width, output_dim):
         super(PPOAgent, self).__init__()
@@ -120,12 +102,13 @@ def collect_rollouts(env, policy, n_steps=2048):
         # Take the action in the environment
         next_state, reward, done, info = env.step(action.item())
 
-        # Log collected swirlies
+        # Log info
         logging.info(
             f"Collected swirlies: {info['swirlies collected']} | Total swirlies: {info['swirlies detected']} | "
             f"Swirles reward: {info['swirlies reward']} | Episode reward: {info['episode reward']} | "
             f"Last 10 rewards: {info['last 10 rewards']} | Action: {action.item()} | Done: {done} | "
-            f"Frame Difference: {info['frame difference']} | Total Reward: {info['total reward']}"
+            f"Frame Difference: {info['frame difference']} | Total Reward: {info['total reward']} | "
+            f"Checkpoint Reward: {info['checkpoint reward']} | Checkpoint ID: {info['checkpoint id']}"
         )
 
         if done:
