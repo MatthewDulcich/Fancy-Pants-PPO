@@ -104,11 +104,11 @@ def main():
             input_channels=input_channels,
             input_height=input_height,
             input_width=input_width,
-            output_dim=output_dim
+            n_actions=output_dim
         )
 
         # Optimizer for the policy
-        optimizer = optim.Adam(policy.parameters(), lr=1e-3)
+        optimizer = optim.Adam(policy.parameters(), lr=1e-4)
 
         # Training loop
         logging.info("Starting training with timeout-based reset...")
@@ -130,17 +130,17 @@ def main():
             states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=config['rollout_steps'])
 
             # Normalize rewards
-            rewards = np.array(rewards, dtype=np.float32)  # Convert rewards to a NumPy array
+            rewards = np.array(rewards, dtype=np.float32, copy=True)
             rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-8)  # Normalize
             logging.info(f"Normalized rewards: mean={rewards.mean():.4f}, std={rewards.std():.4f}")
             
-            if dones[-1]:
+            if dones[-1]: # TODO: check if this is the correct way to check if the episode is done, like the last element of the dones array
                 logging.info("Episode completed successfully.")
                 cumulative_reward = 0
 
             # Update action counts
             for action in actions:
-                action_counts[action] += 1
+                action_counts[action.item()] += 1
 
             # Log action distribution
 
