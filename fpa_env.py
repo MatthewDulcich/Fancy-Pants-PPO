@@ -4,7 +4,7 @@ import pyautogui
 import mss
 import cv2
 import traceback
-import json
+import logging
 from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 from collections import deque
@@ -19,18 +19,28 @@ import config_handler as config_handler
 # Load configuration
 config = config_handler.load_config("game_config.json")
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 class FPAGame(Env):
     def __init__(self, game_location, server_process=None, safari_process=None):
         super().__init__()
         self.observation_space = Box(low=0, high=255, shape=(1, 400, 550), dtype=np.uint8)
-        self.action_space = Discrete(5)  # Number of actions
+        self.action_space = Discrete(6)  # Number of actions
         self.key_states = {}  # Initialize empty key states to keep track of key presses
         self.game_location = game_location  # Set game bounds
         self.prev_observation = None  # Initialize prev_observation
         self.total_reward = 0  # Initialize total reward
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
-        self.template = cv2.imread("swirly.png")
+        self.template = cv2.imread("swirly.png")  # Load the swirly template
+
+        # Add the correct template in grayscale
+        self.door_template = cv2.imread("fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
+
+        # Store recent full-res grayscale observations
+        self.recent_full_res_observations = deque(maxlen=5)  # Store the last 5 observations
+
         self.server_process = server_process  # Add server process
         self.safari_process = safari_process  # Add Safari process
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
@@ -53,11 +63,11 @@ class FPAGame(Env):
             1: 'right',        # press: Right
             2: 's',            # press: Jump
             3: 'down',         # press: Duck
-            4: 'no_action'     # No-op
+            4: 'up',           # press: Up
+            5: 'no_action'     # No-op
         }
 
         key = action_map[action]
-        # print(f"Performing action: {action}, Key: {key}")
 
         # Perform the action
         if key != 'no_action':
@@ -66,15 +76,18 @@ class FPAGame(Env):
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
 
+        # Store the original scale frame in the deque
+        self.recent_full_res_observations.append(original_scale_frame)
+
         # Ensure prev_observation is initialized
         if self.prev_observation is None:
             self.prev_observation = new_observation
 
         # Detect swirlies
-        _, current_swirlies, collected_swirlies = track_swirlies(original_scale_frame, self.template, self.prev_swirlies)
+        _, current_swirlies, collected_swirlies = track_swirlies(
+            original_scale_frame, self.template, self.prev_swirlies
+        )
         self.prev_swirlies = current_swirlies
-        
-        # print(f"Swirlie Reward: {"num_swirlies"}, Current Swirlies: {len(current_swirlies)}, Collected Swirlies: {collected_swirlies}")
 
         # Calculate frame difference
         frame_diff = round(np.mean(np.abs(self.prev_observation - new_observation)))
@@ -93,10 +106,16 @@ class FPAGame(Env):
             reward -= 5
 
         # Reward for completing the level
-        if self.get_done():
-            print(f"Reward received for completing the level: {reward}")
-            reward += 100  # Ensure this is additive to keep previous rewards
-            done = True
+        if self.check_for_black_screen():
+            logging.info("Entered a door. Checking for wrong door entry...")
+            if self.entered_wrong_door():
+                logging.info("Wrong door detected. Penalizing and resetting environment...")
+                reward -= 1000  # Penalize for entering the wrong door
+                done = True  # End the episode
+            else:
+                logging.info("Correct door detected. Rewarding...")
+                reward += 1000  # Reward for completing the level
+                done = True  # End the episode
         else:
             done = False
 
@@ -117,19 +136,38 @@ class FPAGame(Env):
 
         # Store relevant info in info dict
         info = {
-            "action": action,  # Action taken
-            "swirlies detected": len(current_swirlies),  # Number of swirlies detected
-            "swirlies collected": collected_swirlies,  # Number of swirlies collected
-            "swirlies reward": swirlie_reward,  # Reward for collecting swirlies
-            "frame difference": frame_diff,  # Difference between frames
-            "done": done,  # Whether the episode is done
-            "episode reward": reward,  # Reward for the current episode
-            "total reward": self.total_reward,  # Total accumulated reward
-            "last 10 rewards": list(self.rewards_list)[-10:]  # List of the last ten rewards for each step
+            "action": action,
+            "swirlies detected": len(current_swirlies),
+            "swirlies collected": collected_swirlies,
+            "swirlies reward": swirlie_reward,
+            "frame difference": frame_diff,
+            "done": done,
+            "episode reward": reward,
+            "total reward": self.total_reward,
+            "last 10 rewards": list(self.rewards_list)[-10:],
+            "cumulative reward": sum(self.rewards_list)
         }
 
         return new_observation, reward, done, info
 
+    def entered_wrong_door(self):
+        """
+        Check if the agent entered the wrong door by comparing recent observations
+        with the door template.
+        """
+        for observation in self.recent_full_res_observations:
+            # Match template using OpenCV
+            result = cv2.matchTemplate(observation, self.door_template, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, _ = cv2.minMaxLoc(result)
+
+            # Define a similarity threshold (adjust as needed)
+            similarity_threshold = 0.6
+            if max_val >= similarity_threshold:
+                logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
+                return True
+
+        return False
+    
     def reset(self):
         """
         Reset the environment by restarting the Ruffle server and Safari process.
@@ -179,15 +217,6 @@ class FPAGame(Env):
             traceback.print_exc()
             raise
     
-    # Visualize the game (get observation)
-    def render(self):
-        pass
-    
-    # Not used in this implementation
-    # Close the observation (closes render)
-    def close(self):
-        pass
-    
     # Get the game window
     def get_observation(self): 
         # TODO: Fix bug between the monitor and screenshot grab, depending on size of screen the screenshot is doubled, my
@@ -206,32 +235,31 @@ class FPAGame(Env):
         # print("Screenshot shape:", screenshot.size)
 
         # Convert to numpy array and keep only the grayscale channel
-        frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)
+        rgb_frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)
 
         # Convert to grayscale
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        grayscale_frame = cv2.cvtColor(rgb_frame, cv2.COLOR_BGR2GRAY)
         
         # Downscale the grayscale frame
         downscaled_frame = cv2.resize(
-            frame, 
+            grayscale_frame, 
             (config['down_scaled']['width'], config['down_scaled']['height']), 
             interpolation=cv2.INTER_NEAREST
         )
 
         # Add channel dimension for compatibility
-        observation = np.expand_dims(downscaled_frame, axis=0)
+        downscaled_frame = np.expand_dims(downscaled_frame, axis=0)
 
-        return observation, frame
-        
-    def get_done(self):
+        return downscaled_frame, grayscale_frame
+    
+    def check_for_black_screen(self):
         """
-        Check if the screen is black (end of level).
+        Check if the screen is black (entered a door, game over, change level, etc.)
         """
         # Directly capture observation
-        observation, _ = self.get_observation()
+        downscaled_obs, grayscale_obs = self.get_observation()
 
-        # Use numpy operations to calculate average intensity
-        avg_intensity = observation.mean()  # More efficient than np.mean(observation)
+        avg_intensity = downscaled_obs.mean()  # More efficient than np.mean(observation)
 
         # Optimize threshold comparison
         is_black_screen = avg_intensity < 10  # Fine-tune threshold as needed

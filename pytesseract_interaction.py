@@ -25,7 +25,7 @@ def extract_text_from_region(region):
     """
     Uses OCR to extract text from a specified screen region.
     """
-    print("Extracting text from region:", region)
+    # print("Extracting text from region:", region)
     gray_image = capture_region(region)
     detected_text = pytesseract.image_to_string(gray_image).strip()
     return detected_text
