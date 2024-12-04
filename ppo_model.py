@@ -87,12 +87,12 @@ def collect_rollouts(env, policy, n_steps=2048):
     :param n_steps: Number of steps to collect per rollout.
     :return: Rollout data (states, actions, rewards, values, log_probs, dones).
     """
-    states = []
-    actions = []
-    rewards = []
-    log_probs = []
-    values = []
-    dones = []
+    states = deque(maxlen=n_steps)
+    actions = deque(maxlen=n_steps)
+    rewards = deque(maxlen=n_steps)
+    log_probs = deque(maxlen=n_steps)
+    values = deque(maxlen=n_steps)
+    dones = deque(maxlen=n_steps)
 
     state = env.reset()  # Reset the environment
     print("Observation shape:", state.shape)
@@ -120,7 +120,6 @@ def collect_rollouts(env, policy, n_steps=2048):
         # Log collected swirlies
         logging.info(f"Detected swirlies: {info['swirlies detected']}, Collected swirlies: {info['swirlies collected']}")
 
-
         # Store trajectory data
         states.append(state.flatten())  # Preprocessed and flattened
         actions.append(action.item())
@@ -129,15 +128,19 @@ def collect_rollouts(env, policy, n_steps=2048):
         values.append(state_value.item())
         dones.append(done)
 
-        # print(f"Observation shape from env: {state.shape}")
-        # print(f"State tensor shape before policy: {state_tensor.shape}")
-
         # Prepare for the next step
         state = next_state
         if done:
             state = env.reset()  # Reset on episode completion
 
-    states = np.array(states)  # Combine into a single NumPy array for better tensor conversion
+    # Convert deque to numpy arrays for better tensor conversion
+    states = np.array(states)
+    actions = np.array(actions)
+    rewards = np.array(rewards)
+    log_probs = np.array(log_probs)
+    values = np.array(values)
+    dones = np.array(dones)
+
     return states, actions, rewards, log_probs, values, dones
 
 def compute_ppo_loss(
