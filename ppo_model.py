@@ -104,11 +104,11 @@ def collect_rollouts(env, policy, n_steps=2048):
 
         # Log info
         logging.info(
-            f"Collected swirlies: {info['swirlies collected']} | Total swirlies: {info['swirlies detected']} | "
-            f"Swirles reward: {info['swirlies reward']} | Episode reward: {info['episode reward']} | "
-            f"Last 10 rewards: {info['last 10 rewards']} | Action: {action.item()} | Done: {done} | "
-            f"Frame Difference: {info['frame difference']} | Total Reward: {info['total reward']} | "
-            f"Checkpoint Reward: {info['checkpoint reward']} | Checkpoint ID: {info['checkpoint id']}"
+            f"Collected swirlies: {info['swirlies collected']:<3} | Total swirlies: {info['swirlies detected']:<3} | "
+            f"Swirles reward: {info['swirlies reward']:<5} | Episode reward: {info['episode reward']:<5} | "
+            f"Frame Difference: {info['frame difference']:<3} | Total Reward: {info['total reward']:<5} | "
+            f"Checkpoint Reward: {info['checkpoint reward']:<5} | Checkpoint ID: {str(info['checkpoint id']):<4} | "
+            f"Action: {action.item():<2} | Done: {str(done):<5} | Last 10 rewards: {str(info['last 10 rewards']):<50}"
         )
 
         if done:
