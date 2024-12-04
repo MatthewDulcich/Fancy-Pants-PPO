@@ -124,9 +124,12 @@ def collect_rollouts(env, policy, n_steps=2048):
         logging.info(
             f"Collected swirlies: {info['swirlies collected']} | Total swirlies: {info['swirlies detected']} | "
             f"Swirles reward: {info['swirlies reward']} | Episode reward: {info['episode reward']} | "
-            f"Last 10 rewards: {info['last 10 rewards']}"
+            f"Last 10 rewards: {info['last 10 rewards']} | Action: {action.item()} | Done: {done} | "
+            f"Frame Difference: {info['frame difference']} | Total Reward: {info['total reward']}"
         )
 
+        if done:
+            state = env.reset()  # Reset on episode completion
 
         # Store trajectory data
         states.append(state.flatten())  # Preprocessed and flattened
@@ -141,8 +144,6 @@ def collect_rollouts(env, policy, n_steps=2048):
 
         # Prepare for the next step
         state = next_state
-        if done:
-            state = env.reset()  # Reset on episode completion
 
     states = np.array(states)  # Combine into a single NumPy array for better tensor conversion
     return states, actions, rewards, log_probs, values, dones

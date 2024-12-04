@@ -63,17 +63,17 @@ def main():
     os.makedirs(models_dir, exist_ok=True)
 
     try:
-        # Initialize environment and PPO
-        logging.info("Starting PPO Training")
-        logging.info(f"Hyperparameters: Learning Rate = {3e-4}, Gamma = {0.99}, Epsilon = {0.2}, Rollout Steps = {2048}")
-        launch_fpa_game.kill_port(config['PORT'])
-        server_process = game_env_setup.start_ruffle_host(config['PORT'])
-        safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
+        # # Initialize environment and PPO
+        # logging.info("Starting PPO Training")
+        # logging.info(f"Hyperparameters: Learning Rate = {3e-4}, Gamma = {0.99}, Epsilon = {0.2}, Rollout Steps = {2048}")
+        # launch_fpa_game.kill_port(config['PORT'])
+        # server_process = game_env_setup.start_ruffle_host(config['PORT'])
+        # safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
         
-        safari_window = enter_game.get_most_recent_window_by_owner("Safari")
-        if not safari_window:
-            raise RuntimeError("No Safari window found. Exiting.")
-        enter_game.enter_game(safari_window, pre_loaded=True)
+        # safari_window = enter_game.get_most_recent_window_by_owner("Safari")
+        # if not safari_window:
+        #     raise RuntimeError("No Safari window found. Exiting.")
+        # enter_game.enter_game(safari_window, pre_loaded=True)
 
         canvas_info = {'top': 0, 'left': 0, 'width': 550, 'height': 400}
         if not canvas_info:
@@ -142,7 +142,10 @@ def main():
 
             # Collect rollouts
             states, actions, rewards, log_probs, values, dones = collect_rollouts(env, policy, n_steps=1024)
-            # print(f"Collected rollouts: {len(states)} steps")
+            
+            if dones[-1]:
+                logging.info("Episode completed successfully.")
+                cumulative_reward = 0
 
             # Update action counts
             for action in actions:

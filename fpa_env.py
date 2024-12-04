@@ -112,7 +112,6 @@ class FPAGame(Env):
                 logging.info("Wrong door detected. Penalizing and resetting environment...")
                 reward -= 1000  # Penalize for entering the wrong door
                 done = True  # End the episode
-                self.reset()  # Reset the environment after the penalty
             else:
                 logging.info("Correct door detected. Rewarding...")
                 reward += 1000  # Reward for completing the level
@@ -156,10 +155,6 @@ class FPAGame(Env):
         Check if the agent entered the wrong door by comparing recent observations
         with the door template.
         """
-        if not self.door_template:
-            logging.error("Door template is missing. Cannot check for wrong door entry.")
-            return False
-
         for observation in self.recent_full_res_observations:
             # Match template using OpenCV
             result = cv2.matchTemplate(observation, self.door_template, cv2.TM_CCOEFF_NORMED)
