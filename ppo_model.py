@@ -102,12 +102,13 @@ def collect_rollouts(env, policy, n_steps=2048):
         # Take the action in the environment
         next_state, reward, done, info = env.step(action.item())
 
-        # Log collected swirlies
+        # Log info
         logging.info(
             f"Collected swirlies: {info['swirlies collected']} | Total swirlies: {info['swirlies detected']} | "
             f"Swirles reward: {info['swirlies reward']} | Episode reward: {info['episode reward']} | "
             f"Last 10 rewards: {info['last 10 rewards']} | Action: {action.item()} | Done: {done} | "
-            f"Frame Difference: {info['frame difference']} | Total Reward: {info['total reward']}"
+            f"Frame Difference: {info['frame difference']} | Total Reward: {info['total reward']} | "
+            f"Checkpoint Reward: {info['checkpoint reward']} | Checkpoint ID: {info['checkpoint id']}"
         )
 
         if done:
