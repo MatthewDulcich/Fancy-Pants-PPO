@@ -46,6 +46,7 @@ class FPAGame(Env):
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
         self.repeat_action_window = 5  # Window size for checking repeated actions
         self.recent_actions = deque(maxlen=5)  # Track recent actions
+        # self.i = 0  # Initialize counter for debugging
 
     # Helper function to toggle key presses
     def key_toggle(self, key):
@@ -75,6 +76,10 @@ class FPAGame(Env):
 
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
+
+        # save the original scale frame .png
+        # cv2.imwrite(f"original_scale_frame_{self.i}.png", original_scale_frame)
+        # self.i += 1
 
         # Store the original scale frame in the deque
         self.recent_full_res_observations.append(original_scale_frame)
@@ -232,7 +237,6 @@ class FPAGame(Env):
 
         # Capture the game region using persistent mss context
         screenshot = self.sct.grab(monitor)
-        # print("Screenshot shape:", screenshot.size)
 
         # Convert to numpy array and keep only the grayscale channel
         rgb_frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)
@@ -262,7 +266,7 @@ class FPAGame(Env):
         avg_intensity = downscaled_obs.mean()  # More efficient than np.mean(observation)
 
         # Optimize threshold comparison
-        is_black_screen = avg_intensity < 10  # Fine-tune threshold as needed
+        is_black_screen = avg_intensity < 20  # Fine-tune threshold as needed
         return is_black_screen
 
     def cleanup_resources(self, server_process, safari_process):

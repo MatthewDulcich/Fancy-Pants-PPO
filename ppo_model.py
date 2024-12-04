@@ -8,24 +8,6 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# class PPOAgent(nn.Module):
-#     def __init__(self, input_dim, output_dim):
-#         super(PPOAgent, self).__init__()
-#         self.shared_layers = nn.Sequential(
-#             nn.Linear(input_dim, 128),
-#             nn.ReLU(), # TODO: look into conv layers
-#             nn.Linear(128, 128),
-#             nn.ReLU(),
-#         )
-#         self.policy_head = nn.Linear(128, output_dim)  # Output probabilities for actions
-#         self.value_head = nn.Linear(128, 1)           # Output state value
-
-#     def forward(self, x):
-#         x = self.shared_layers(x)
-#         policy_logits = self.policy_head(x)
-#         state_value = self.value_head(x)
-#         return policy_logits, state_value
-
 class PPOAgent(nn.Module):
     def __init__(self, input_channels, input_height, input_width, output_dim):
         super(PPOAgent, self).__init__()
@@ -55,6 +37,23 @@ class PPOAgent(nn.Module):
         self.policy_head = nn.Linear(128, output_dim)  # Output probabilities for actions
         self.value_head = nn.Linear(128, 1)           # Output state value
 
+        # Initialize weights
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        """
+        Apply weight initialization to all layers in the model.
+        """
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                nn.init.kaiming_uniform_(module.weight, nonlinearity='relu')  # He initialization for ReLU
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)  # Xavier initialization for linear layers
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+
     def _get_conv_output_size(self, height, width):
         """
         Compute the size of the flattened output after convolutional layers.
@@ -64,19 +63,11 @@ class PPOAgent(nn.Module):
         return int(torch.prod(torch.tensor(conv_output.shape[1:])).item())  # Flattened size
 
     def forward(self, x):
-        # print(f"Input shape in forward: {x.shape}")  # Debugging input shape
-        if len(x.shape) == 4:  # Input is (B, C, H, W)
-            pass
-        elif len(x.shape) == 3:  # (H, W, C)
-            x = x.unsqueeze(0).permute(0, 3, 1, 2)
-        elif len(x.shape) == 2:  # Flattened input
-            raise ValueError("Input is flattened; expected image-like input for Conv layers.")
-        else:
-            raise ValueError(f"Unexpected input shape: {x.shape}")
-
-        x = self.conv_layers(x)  # Apply convolutional layers
+        if len(x.shape) != 4:
+            raise ValueError(f"Input to PPOAgent must have shape (B, C, H, W), but got {x.shape}")
+        x = self.conv_layers(x)
         x = x.view(x.size(0), -1)  # Flatten
-        x = self.shared_layers(x)  # Fully connected layers
+        x = self.shared_layers(x)
         policy_logits = self.policy_head(x)
         state_value = self.value_head(x)
         return policy_logits, state_value
@@ -102,6 +93,8 @@ def collect_rollouts(env, policy, n_steps=2048):
     for step in range(n_steps):
         # Convert state to a PyTorch tensor
         state_tensor = torch.tensor(state, dtype=torch.float32)
+        # normalize the state tensor
+        state_tensor = state_tensor / 255.0
 
         # If the observation is grayscale (1 channel):
         if len(state_tensor.shape) == 3:  # (C, H, W)
@@ -155,7 +148,7 @@ def collect_rollouts(env, policy, n_steps=2048):
     return states, actions, rewards, log_probs, values, dones
 
 def compute_ppo_loss(
-    policy, states, actions, rewards, log_probs, values, dones, gamma=0.99, epsilon=0.2, entropy_coef=0.01
+    policy, states, actions, rewards, log_probs, values, dones, gamma=0.99, epsilon=0.2, entropy_coef=0.02
 ):
     """
     Compute PPO loss (policy, value, and entropy components).
@@ -167,49 +160,60 @@ def compute_ppo_loss(
         running_return = reward + gamma * running_return * (1 - done)
         returns.insert(0, running_return)
 
+    # Convert to tensors
     returns = torch.tensor(returns, dtype=torch.float32)
     values = torch.tensor(values, dtype=torch.float32)
+    actions = torch.tensor(actions, dtype=torch.long)
+    log_probs_tensor = torch.tensor(log_probs, dtype=torch.float32)
+
+    # Normalize returns
+    returns = (returns - returns.mean()) / (returns.std() + 1e-8)
+
+    # Compute advantages
     advantages = returns - values
-    std_adv = advantages.std() + 1e-8  # Avoid division by zero
-    advantages = (advantages - advantages.mean()) / std_adv
+    advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
     # Log advantage stats
     logging.info(
         f"Advantages mean: {advantages.mean().item():.4f}, std: {advantages.std().item():.4f}"
     )
 
-    # Reshape states back to (B, C, H, W)
+    # Reshape states
     batch_size = len(states)
     state_tensor = torch.tensor(states, dtype=torch.float32).view(batch_size, 1, 150, 200)
-
-    # Convert actions to tensor
-    action_tensor = torch.tensor(actions, dtype=torch.long)
 
     # Forward pass through the policy
     policy_logits, state_values = policy(state_tensor)
     action_distribution = torch.distributions.Categorical(logits=policy_logits)
-    new_log_probs = action_distribution.log_prob(action_tensor)
-
-    # Handle log_probs dtype explicitly
-    log_probs_tensor = torch.tensor(log_probs, dtype=new_log_probs.dtype)
+    new_log_probs = action_distribution.log_prob(actions)
 
     # Policy loss (clipped surrogate objective)
     ratios = torch.exp(new_log_probs - log_probs_tensor)
     clipped_ratios = torch.clamp(ratios, 1 - epsilon, 1 + epsilon)
     policy_loss = -torch.min(ratios * advantages, clipped_ratios * advantages).mean()
 
-    # Value loss
+    # Value loss with clipping
     value_loss = (returns - state_values).pow(2).mean()
+    clipped_value_loss = torch.clamp(value_loss, 0, 100)  # Prevent excessive value errors
 
     # Entropy bonus
     entropy = action_distribution.entropy().mean()
 
-    # Log individual loss components
-    logging.info(f"Policy Loss: {policy_loss.item():.4f} | Value Loss: {value_loss.item():.4f} | Entropy: {entropy.item():.4f}")
+    # Log details for debugging
+    logging.info(f"Policy logits sample: {policy_logits[:5]}")
+    logging.info(f"State values sample: {state_values[:5]}")
+    logging.info(f"Actions sample: {actions[:5]}")
+    logging.info(f"Returns sample: {returns[:5]}")
+    logging.info(f"Values sample: {values[:5]}")
+    logging.info(f"Advantages sample: {advantages[:5]}")
+    logging.info(f"Log Probs sample: {log_probs_tensor[:5]}")
+    logging.info(f"New Log Probs sample: {new_log_probs[:5]}")
+    logging.info(f"Ratios mean: {ratios.mean().item():.4f}, std: {ratios.std().item():.4f}")
+    logging.info(f"Policy Loss: {policy_loss.item():.4f} | Value Loss: {value_loss.item():.4f} (Clipped: {clipped_value_loss.item():.4f}) | Entropy: {entropy.item():.4f}")
     logging.info(f"Entropy Coefficient: {entropy_coef}")
 
     # Total loss
-    total_loss = policy_loss + 0.5 * value_loss - entropy_coef * entropy
+    total_loss = policy_loss + 0.5 * clipped_value_loss - entropy_coef * entropy
     return total_loss
 
 
