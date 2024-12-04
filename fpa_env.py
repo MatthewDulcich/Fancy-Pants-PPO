@@ -98,6 +98,10 @@ class FPAGame(Env):
         # Calculate overall reward
         reward = 0
 
+        # Reward for hitting the right key
+        if action == 1:  # 'right' action
+            reward += 1
+
         # Determine reward based on frame difference
         frame_diff_threshold = 5
         if frame_diff > frame_diff_threshold:
