@@ -25,12 +25,12 @@ def parse_log_file(log_file):
 
     # Precompile regex patterns for efficiency
     patterns = {
-        "episode": re.compile(r"^Episode (\d+)"),
-        "reward": re.compile(r"^Reward: ([\d.]+)"),
-        "length": re.compile(r"^Length: (\d+)"),
-        "policy_loss": re.compile(r"Policy Loss: ([\d\-.]+)"),
-        "value_loss": re.compile(r"Value Loss: ([\d\-.]+)"),
-        "entropy": re.compile(r"Entropy: ([\d.]+)")
+        "episode": re.compile(r"Episode (\d+)"),  # Matches "Episode <number>"
+        "reward": re.compile(r"Reward: ([\d.]+)"),  # Matches "Reward: <value>"
+        "length": re.compile(r"Length: (\d+)"),  # Matches "Length: <number>"
+        "policy_loss": re.compile(r"Policy Loss: ([\d\-.]+)"),  # Matches "Policy Loss: <value>"
+        "value_loss": re.compile(r"Value Loss: ([\d\-.]+)"),  # Matches "Value Loss: <value>"
+        "entropy": re.compile(r"Entropy: ([\d.]+)")  # Matches "Entropy: <value>"
     }
 
     current_episode = None  # Track the current episode being processed
@@ -38,29 +38,33 @@ def parse_log_file(log_file):
     with open(log_file, "r") as file:
         for line in file:
             # Match episode number
-            if match := patterns["episode"].match(line):
+            if match := patterns["episode"].search(line):
                 current_episode = int(match.group(1))
                 metrics["episodes"].append(current_episode)
 
             # Match reward
-            elif match := patterns["reward"].match(line):
+            elif match := patterns["reward"].search(line):
                 metrics["rewards"].append(float(match.group(1)))
 
             # Match length
-            elif match := patterns["length"].match(line):
+            elif match := patterns["length"].search(line):
                 metrics["lengths"].append(int(match.group(1)))
 
             # Match policy loss
-            elif match := patterns["policy_loss"].match(line):
+            elif match := patterns["policy_loss"].search(line):
                 metrics["policy_losses"].append(float(match.group(1)))
 
             # Match value loss
-            elif match := patterns["value_loss"].match(line):
+            elif match := patterns["value_loss"].search(line):
                 metrics["value_losses"].append(float(match.group(1)))
 
             # Match entropy
-            elif match := patterns["entropy"].match(line):
+            elif match := patterns["entropy"].search(line):
                 metrics["entropies"].append(float(match.group(1)))
+
+    # Verify if episodes were parsed correctly
+    if not metrics["episodes"]:
+        raise ValueError("No episode data found in metrics. Cannot generate plots.")
 
     return metrics
 
@@ -106,7 +110,7 @@ def visualize_metrics(log_file=None, csv_file=None, save_dir=None):
 
 # Example usage
 if __name__ == "__main__":
-    log_file_path = "logs/fpa_game_logs_20241204-235814.log"
+    log_file_path = "logs/fpa_game_logs_20241205-044749.log"
     save_plots_directory = "plots"  # Directory to save plots
     visualize_metrics(log_file=log_file_path, save_dir=save_plots_directory)
     print("Visualization complete.")

@@ -162,8 +162,8 @@ def main():
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
             
             # Save metrics periodically
-            if episode_count % config.get('save_interval', 30) == 0:
-                save(os.path.join(models_dir, f"ppo_model_{current_time}.pt"), ppo)
+            if episode_count % config.get('save_interval', 2) == 0:
+                save(os.path.join(models_dir, f"ppo_model_{episode_count}.pt"), ppo)
                 logging.info(f"Model saved at episode {episode_count}")
             
             # Timeout handling
