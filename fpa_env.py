@@ -358,29 +358,30 @@ class FPAGame(Env):
         """
         Clean up resources by terminating server and Safari processes.
         """
+        def terminate_process(process, name):
+            """
+            Helper function to safely terminate a process.
+            """
+            if process:
+                if process.poll() is None:  # Check if process is still running
+                    try:
+                        process.terminate()
+                        process.wait(timeout=5)  # Add a timeout to avoid indefinite waiting
+                        logging.info(f"{name} process terminated successfully.")
+                    except Exception as e:
+                        logging.warning(f"Failed to terminate {name} process gracefully: {e}")
+                        process.kill()  # Force terminate if graceful termination fails
+                        logging.info(f"{name} process killed.")
+                else:
+                    logging.info(f"{name} process already terminated.")
+            else:
+                logging.info(f"No {name} process to terminate.")
+
         try:
-            print("Clean up function called in env reset...")
-            
-            # Safely terminate the Ruffle server process
-            if server_process:
-                if server_process.poll() is None:  # Check if process is still running
-                    server_process.terminate()
-                    server_process.wait()
-                    print("Ruffle server process terminated.")
-                else:
-                    print("Ruffle server process already terminated.")
-            
-            # Safely terminate the Safari process
-            if safari_process:
-                if safari_process.poll() is None:  # Check if process is still running
-                    safari_process.terminate()
-                    safari_process.wait()
-                    print("Safari process terminated.")
-                else:
-                    print("Safari process already terminated.")
-            
-            print("All processes terminated successfully.")
-        
+            logging.info("Starting resource cleanup...")
+            terminate_process(server_process, "Ruffle server")
+            terminate_process(safari_process, "Safari")
+            logging.info("All processes terminated successfully.")
+
         except Exception as e:
-            print("An error occurred during cleanup:", e)
-            traceback.print_exc()
+            logging.error("An error occurred during cleanup:", exc_info=True)
