@@ -85,9 +85,9 @@ class FPAGame(Env):
 
         key = action_map[action]
 
-        # Perform the action
-        if key != 'no_action':
-            self.key_toggle(key)
+        # # Perform the action
+        # if key != 'no_action':
+        #     self.key_toggle(key)
 
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
@@ -133,11 +133,14 @@ class FPAGame(Env):
 
         # Reward for completing the level
         if self.check_for_black_screen():
+            logging.info("Black screen detected. Checking which door agent entered...")
             if self.entered_wrong_door():
+                logging.info("Entered the wrong door. Level failed. Reward: -500")
                 reward -= 500  # Reduced penalty for exploration
                 done = True
             else:
                 reward += 500  # Normalized reward for completion
+                logging.info("Level completed successfully!!! Reward: 500")
                 done = True
         else:
             done = False
@@ -196,8 +199,8 @@ class FPAGame(Env):
 
             # Define a similarity threshold (adjust as needed)
             similarity_threshold = 0.9
+            logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
             if max_val >= similarity_threshold:
-                logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
                 return True
 
         return False

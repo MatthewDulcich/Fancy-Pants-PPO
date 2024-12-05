@@ -60,7 +60,7 @@ class PPO:
 
         state = env.reset()
 
-        for _ in range(n_steps):
+        for i in range(n_steps):
             state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0) / 255.0
             policy_logits, state_value = self.policy(state_tensor)
             action_dist = Categorical(logits=policy_logits)
@@ -77,6 +77,8 @@ class PPO:
             dones.append(done)
 
             state = next_state if not done else env.reset()
+
+            logging.info(f"Step {i + 1}/{n_steps} | Action: {action.item()} | Reward: {reward} | Done: {done}")
 
         return (
             torch.tensor(np.array(states), dtype=torch.float32) / 255.0,
