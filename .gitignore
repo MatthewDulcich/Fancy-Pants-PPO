@@ -177,8 +177,7 @@ step*
 episode*
 
 .DS_Store
-
-Model\ Checkpoints/
 tab_bar_region.png
 ppo_policy_episode*
 temp*
+Saved Artifacts/ppo_model*

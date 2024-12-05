@@ -37,7 +37,6 @@ def main():
 
     # Ensure the saved models directory exists
     models_dir = os.path.join(os.getcwd(), 'Saved Artifacts')
-    models_dir = os.path.join(os.getcwd(), 'Saved Artifacts')
     os.makedirs(models_dir, exist_ok=True)
 
     try:
@@ -162,8 +161,8 @@ def main():
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
             
             # Save metrics periodically
-            if episode_count % config.get('save_interval', 2) == 0:
-                save(os.path.join(models_dir, f"ppo_model_{episode_count}.pt"), ppo)
+            if episode_count % 2 == 0:
+                save(ppo.policy.state_dict(), os.path.join(models_dir, f"ppo_model_{episode_count}.pt"))
                 logging.info(f"Model saved at episode {episode_count}")
             
             # Timeout handling
