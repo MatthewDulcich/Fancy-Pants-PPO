@@ -161,7 +161,7 @@ def main():
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
             
             # Save metrics periodically
-            if episode_count % 2 == 0:
+            if episode_count % 10 == 0:
                 save(ppo.policy.state_dict(), os.path.join(models_dir, f"ppo_model_{episode_count}.pt"))
                 logging.info(f"Model saved at episode {episode_count}")
             
