@@ -147,15 +147,15 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
 if __name__ == "__main__":
     # Load example observations (frames) and template image
     observations = [
-        cv2.imread("test_images/test_image5.png"),        
-        cv2.imread("test_images/test_image6.png")
+        cv2.imread("images/swirly_tracking_test_images/test_image5.png"),        
+        cv2.imread("images/swirly_tracking_test_images/test_image6.png")
     ]
     observations2 = [
-        cv2.imread("test_images/test_image7.png"),
-        cv2.imread("test_images/test_image8.png"),
-        cv2.imread("test_images/test_image9.png"),
-        cv2.imread("test_images/test_image10.png"),
-        cv2.imread("test_images/test_image11.png")
+        cv2.imread("images/swirly_tracking_test_images/test_image7.png"),
+        cv2.imread("images/swirly_tracking_test_images/test_image8.png"),
+        cv2.imread("images/swirly_tracking_test_images/test_image9.png"),
+        cv2.imread("images/swirly_tracking_test_images/test_image10.png"),
+        cv2.imread("images/swirly_tracking_test_images/test_image11.png")
     ]
     
     template = cv2.imread("images/image_templates/swirly.png")
