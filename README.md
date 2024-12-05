@@ -1,25 +1,48 @@
 # Fancy-Pants-PPO
 Proximal Policy Optimization applied to the game Fancy Pants
 
-# Setup
-# Installing Dependencies (MacOS)
-## Install Ruffle
-install ruffle from this link
-https://github.com/ruffle-rs/homebrew-ruffle/ (test 1)
-https://ruffle.rs/downloads#website-package (launch_ruffle.py)
-A Homebrew tap for the latest (master) version of Ruffle. As edgy as it gets.
+## OS Must Run on macOS
+Developed on MacBooks with M Series chips, on macOS Sequoia 15.1.1.
 
-Install (For Test 1)
-brew install ruffle-rs/ruffle/ruffle
-Update
-brew upgrade ruffle --fetch-HEAD
+## Setup
+1. Clone this repository.
 
-(Needs XCode16)
+## Installing Dependencies (macOS)
+### Start a Conda Environment or Python Virtual Environment
+- Use `requirements.txt` or `shared_env.yml` to install the necessary packages.
 
-## Need Fancy Box .swf files
-Put them in the main directory, it should look like this
+### Install Requirements
+```
+pip install -r requirements.txt
+```
+
+### Download Ruffle Files
+We self-host Ruffle files for speed, instead of using the Homebrew version or CDN.
+
+1. Download the Ruffle files from [Ruffle Downloads](https://ruffle.rs/downloads#website-package).
+2. Download the macOS version of the files.
+3. Unzip the downloaded files and place the `ruffle` folder in your home directory.
+4. Update the `launch_ruffle.html` file:
+   - Add the following script tag to the `<head>` section:
+     ```html
+     <script src="<ruffle directory>/ruffle.js"></script>
+     ```
+
+### Need Fancy Pants .swf Files
+Place the `.swf` files in the main directory. The structure should look like this:
 fpaworld3.swf
 
-## Check to make sure Privacy and Security > Accesibility > VSCode switch is toggled on
+## Privacy & Accessibility Settings
+1. Ensure **System Settings > Privacy & Security > Accessibility > VSCode** switch is toggled on.
+   - This allows VSCode to execute files and control the screen.
 
-## You must enable 'Allow remote automation' in the Developer section of Safari Settings to control Safari via WebDriver.
+## Additional Notes
+### Safari WebDriver
+If controlling Safari via WebDriver:
+1. Enable **Allow Remote Automation** in **Safari > Preferences > Developer** section.
+
+### Display Resolution for 4K MacBooks or Monitors
+1. Set the display resolution to 1920x1080 (or the closest ratio):
+   - Navigate to **System Settings > Displays > Advanced...**.
+   - Select **Show resolutions as list**.
+   - Check **Show all resolutions** and choose **1920x1200**.
