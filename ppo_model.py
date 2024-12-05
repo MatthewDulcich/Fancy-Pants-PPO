@@ -9,9 +9,6 @@ from logging_config import configure_logging
 # Configure logging
 logging, _ = configure_logging()  # Ignore the log filename if not needed here
 
-# Example usage in ppo_model.py
-logging.info("PPO model initialized.")
-
 class PPOAgent(nn.Module):
     def __init__(self, input_channels, input_height, input_width, n_actions):
         super(PPOAgent, self).__init__()
@@ -53,7 +50,7 @@ class PPO:
         self.epsilon = epsilon
         self.entropy_coef = entropy_coef
 
-    def collect_rollouts(self, env, n_steps=2048, max_buffer_size=10000):
+    def collect_rollouts(self, env, n_steps=1024, max_buffer_size=10000):
         states = deque(maxlen=max_buffer_size)
         actions = deque(maxlen=max_buffer_size)
         rewards = deque(maxlen=max_buffer_size)
