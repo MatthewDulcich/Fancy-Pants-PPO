@@ -140,6 +140,7 @@ def main():
             
             # Save metrics periodically
             if episode_count % config.get('save_interval', 30) == 0:
+                current_time = time.strftime("%Y%m%d-%H%M%S")
                 save(os.path.join(models_dir, f"ppo_model_{current_time}.pt"), ppo)
                 logging.info(f"Model saved at episode {episode_count}")
             
