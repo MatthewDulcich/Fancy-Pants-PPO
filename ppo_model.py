@@ -133,9 +133,4 @@ class PPO:
             if epoch == 0 or epoch == k_epochs - 1:
                 logging.info(f"Epoch {epoch + 1}/{k_epochs} | PPO Loss: {loss.item():.4f}")
             
-            # Optionally calculate loss components for logging
-        policy_loss = self.compute_policy_loss()  # Extract from compute_ppo_loss
-        value_loss = self.compute_value_loss()  # Extract from compute_ppo_loss
-        entropy = self.compute_entropy()  # Extract from compute_ppo_loss
-        
-        return policy_loss, value_loss, entropy
+        return loss.item()
