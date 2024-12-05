@@ -133,9 +133,7 @@ def main():
         metrics = {
             "episode_rewards": [],
             "episode_lengths": [],
-            "policy_losses": [],
-            "value_losses": [],
-            "entropy": []
+            "ppo_losses": []
         }
 
         while True:
@@ -147,7 +145,7 @@ def main():
             states, actions, rewards, log_probs, values, dones = ppo.collect_rollouts(env, n_steps=config['rollout_steps'])
             
             # Update policy and track loss
-            policy_loss, value_loss, entropy = ppo.update_policy(
+            ppo_loss = ppo.update_policy(
                 states=states,
                 actions=actions,
                 rewards=rewards,
@@ -165,13 +163,11 @@ def main():
             # Update metrics dictionary
             metrics["episode_rewards"].append(episode_reward)
             metrics["episode_lengths"].append(episode_length)
-            metrics["policy_losses"].append(policy_loss)
-            metrics["value_losses"].append(value_loss)
-            metrics["entropy"].append(entropy)
+
             
             # Logging metrics
             logging.info(f"Episode {episode_count} | Reward: {episode_reward:.2f} | Length: {episode_length}")
-            logging.info(f"Policy Loss: {policy_loss:.4f}, Value Loss: {value_loss:.4f}, Entropy: {entropy:.4f}")
+            logging.info(f"PPO Loss: {ppo_loss:.4f}")
             
             # Save metrics periodically
             if episode_count % config.get('save_interval', 30) == 0:
