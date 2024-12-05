@@ -124,7 +124,7 @@ def visualize_metrics(log_file=None, csv_file=None, save_dir=None):
 
 # Example usage
 if __name__ == "__main__":
-    log_file_path = "logs/fpa_game_logs_20241204-224138.log"  # Log file path
+    log_file_path = "logs/fpa_game_logs_20241204-231152.log"
     csv_file_path = "Model Checkpoints/training_metrics.csv"  # CSV file path
     save_plots_directory = "plots"  # Directory to save plots
 
