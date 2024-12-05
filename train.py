@@ -37,6 +37,7 @@ def main():
 
     # Ensure the saved models directory exists
     models_dir = os.path.join(os.getcwd(), 'Saved Artifacts')
+    models_dir = os.path.join(os.getcwd(), 'Saved Artifacts')
     os.makedirs(models_dir, exist_ok=True)
 
     try:
@@ -96,6 +97,8 @@ def main():
         start_time = time.time()
 
         # Initialize metrics
+
+        # Initialize metrics
         episode_count = 1
         metrics = {
             "episode_rewards": [],
@@ -108,8 +111,11 @@ def main():
             logging.info(100*"=")
             logging.info(f"Starting episode {episode_count}")
             
+            
             # Collect rollouts
             states, actions, rewards, log_probs, values, dones = ppo.collect_rollouts(env, n_steps=config['rollout_steps'])
+            
+            # Update policy and track loss
             
             # Update policy and track loss
             ppo_loss = ppo.update_policy(
@@ -139,8 +145,24 @@ def main():
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
             
             # Save metrics periodically
+            
+            # Calculate episode-level metrics
+            episode_reward = rewards.sum().item()
+            episode_length = len(rewards)
+            
+            # Update metrics dictionary
+            metrics["episode_rewards"].append(episode_reward)
+            metrics["episode_lengths"].append(episode_length)
+
+            
+            # Logging metrics
+            logging.info(f"Episode {episode_count}")
+            logging.info(f"Reward: {episode_reward:.2f}")
+            logging.info(f"Length: {episode_length}")
+            logging.info(f"PPO Loss: {ppo_loss:.4f}")
+            
+            # Save metrics periodically
             if episode_count % config.get('save_interval', 30) == 0:
-                current_time = time.strftime("%Y%m%d-%H%M%S")
                 save(os.path.join(models_dir, f"ppo_model_{current_time}.pt"), ppo)
                 logging.info(f"Model saved at episode {episode_count}")
             
