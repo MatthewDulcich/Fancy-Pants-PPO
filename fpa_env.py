@@ -55,7 +55,7 @@ class FPAGame(Env):
         # Load checkpoint images
         self.checkpoints = []
         self.checkpoint_rewards = set()  # Track rewarded checkpoints
-        checkpoint_dir = "checkpoints"
+        checkpoint_dir = "game_checkpoint_images/game_checkpoints"
         for i in range(1, 13):
             checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
             checkpoint_image = cv2.imread(checkpoint_path)
@@ -217,7 +217,7 @@ class FPAGame(Env):
             # Load checkpoint images
             self.checkpoints = []
             self.checkpoint_rewards = set()  # Track rewarded checkpoints
-            checkpoint_dir = "checkpoints"
+            checkpoint_dir = "game_checkpoint_images/game_checkpoints"
             for i in range(1, 13):
                 checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
                 checkpoint_image = cv2.imread(checkpoint_path)
@@ -342,7 +342,7 @@ class FPAGame(Env):
                     print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
 
                     # Save observations with matching checkpoints drawn
-                    annotated_dir = "annotated_images"
+                    annotated_dir = "annotated_checkpoint_images"
                     os.makedirs(annotated_dir, exist_ok=True)
 
                     # Draw a rectangle around the matched region
