@@ -47,6 +47,18 @@ logger.handlers.clear()  # Remove existing handlers
 logger.addHandler(console_handler)  # Add the console handler
 logger.addHandler(logging.FileHandler(log_filename))  # Add the file handler with a unique name
 
+def save_metrics(metrics, save_dir, episode_count):
+    """
+    Save metrics to a file for later analysis.
+    """
+    metrics_file = os.path.join(save_dir, "metrics.csv")
+    with open(metrics_file, "a") as f:
+        if episode_count == 1:  # Write header on the first save
+            f.write("Episode,Reward,Length,PolicyLoss,ValueLoss,Entropy\n")
+        for i in range(len(metrics["episode_rewards"])):
+            f.write(f"{episode_count},{metrics['episode_rewards'][i]},{metrics['episode_lengths'][i]},"
+                    f"{metrics['policy_losses'][i]},{metrics['value_losses'][i]},{metrics['entropy'][i]}\n")
+
 def main():
     """
     Main function to set up the environment, enter the tutorial level, and run training
@@ -115,18 +127,27 @@ def main():
         logging.info("Starting training with timeout-based reset...")
         timeout = config['timeout_mins'] * 60
         start_time = time.time()
+
+        # Initialize metrics
         episode_count = 1
+        metrics = {
+            "episode_rewards": [],
+            "episode_lengths": [],
+            "policy_losses": [],
+            "value_losses": [],
+            "entropy": []
+        }
 
         while True:
             logging.info(100*"=")
             logging.info(100*"=")
             logging.info(f"Starting episode {episode_count}")
-
+            
             # Collect rollouts
             states, actions, rewards, log_probs, values, dones = ppo.collect_rollouts(env, n_steps=config['rollout_steps'])
-
-            # Update the policy using collected rollouts
-            ppo_loss = ppo.update_policy(
+            
+            # Update policy and track loss
+            policy_loss, value_loss, entropy = ppo.update_policy(
                 states=states,
                 actions=actions,
                 rewards=rewards,
@@ -136,18 +157,32 @@ def main():
                 k_epochs=config.get('k_epochs', 4),
                 clip_grad=config.get('clip_grad', 0.5)
             )
-
-            # Save the policy periodically
+            
+            # Calculate episode-level metrics
+            episode_reward = rewards.sum().item()
+            episode_length = len(rewards)
+            
+            # Update metrics dictionary
+            metrics["episode_rewards"].append(episode_reward)
+            metrics["episode_lengths"].append(episode_length)
+            metrics["policy_losses"].append(policy_loss)
+            metrics["value_losses"].append(value_loss)
+            metrics["entropy"].append(entropy)
+            
+            # Logging metrics
+            logging.info(f"Episode {episode_count} | Reward: {episode_reward:.2f} | Length: {episode_length}")
+            logging.info(f"Policy Loss: {policy_loss:.4f}, Value Loss: {value_loss:.4f}, Entropy: {entropy:.4f}")
+            
+            # Save metrics periodically
             if episode_count % config.get('save_interval', 30) == 0:
-                save_path = os.path.join(models_dir, f"ppo_policy_episode_{episode_count}.pt")
-                torch.save(ppo.policy.state_dict(), save_path)
-                logging.info(f"Model saved at Episode {episode_count} to {save_path}")
-
-            # Check for timeout
+                save_metrics(metrics, models_dir, episode_count)
+                logging.info(f"Metrics saved for Episode {episode_count}")
+            
+            # Timeout handling
             if time.time() - start_time > timeout:
                 logging.info("Timeout reached. Resetting environment...")
                 start_time = time.time()
-
+            
             episode_count += 1
 
     except Exception as e:
