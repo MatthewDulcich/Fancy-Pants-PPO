@@ -69,7 +69,7 @@ def main():
     env = None
 
     # Ensure the saved models directory exists
-    models_dir = os.path.join(os.getcwd(), 'Model Checkpoints')
+    models_dir = os.path.join(os.getcwd(), 'Saved Artifacts')
     os.makedirs(models_dir, exist_ok=True)
 
     try:
@@ -170,7 +170,7 @@ def main():
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
             
             # Save metrics periodically
-            if episode_count % config.get('save_interval', 30) == 0:
+            if episode_count % config.get('save_interval', 10) == 0:
                 save_metrics(metrics, models_dir, episode_count)
                 logging.info(f"Metrics saved for Episode {episode_count}")
             
