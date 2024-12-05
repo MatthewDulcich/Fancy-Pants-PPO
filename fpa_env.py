@@ -10,7 +10,7 @@ from collections import deque
 import os
 
 # Script imports
-from track_swirlies import track_swirlies
+from fpa_env_functions.track_swirlies import track_swirlies
 import game_env_setup
 import enter_game
 import launch_fpa_game
