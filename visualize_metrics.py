@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import os
 import re
 
-
 def parse_log_file(log_file):
     """
     Parse the log file to extract metrics for visualization.
@@ -26,38 +25,44 @@ def parse_log_file(log_file):
 
     # Precompile regex patterns for efficiency
     patterns = {
-        "episode": re.compile(r"Starting episode (\d+)"),
-        "reward": re.compile(r"Episode \d+ \| Reward: ([\d.]+) \| Length: (\d+)"),
+        "episode": re.compile(r"^Episode (\d+)"),
+        "reward": re.compile(r"^Reward: ([\d.]+)"),
+        "length": re.compile(r"^Length: (\d+)"),
         "policy_loss": re.compile(r"Policy Loss: ([\d\-.]+)"),
         "value_loss": re.compile(r"Value Loss: ([\d\-.]+)"),
         "entropy": re.compile(r"Entropy: ([\d.]+)")
     }
 
+    current_episode = None  # Track the current episode being processed
+
     with open(log_file, "r") as file:
         for line in file:
-            # Match episode start
+            # Match episode number
             if match := patterns["episode"].match(line):
-                metrics["episodes"].append(int(match.group(1)))
+                current_episode = int(match.group(1))
+                metrics["episodes"].append(current_episode)
 
-            # Match reward and length
-            if match := patterns["reward"].match(line):
+            # Match reward
+            elif match := patterns["reward"].match(line):
                 metrics["rewards"].append(float(match.group(1)))
-                metrics["lengths"].append(int(match.group(2)))
+
+            # Match length
+            elif match := patterns["length"].match(line):
+                metrics["lengths"].append(int(match.group(1)))
 
             # Match policy loss
-            if match := patterns["policy_loss"].match(line):
+            elif match := patterns["policy_loss"].match(line):
                 metrics["policy_losses"].append(float(match.group(1)))
 
             # Match value loss
-            if match := patterns["value_loss"].match(line):
+            elif match := patterns["value_loss"].match(line):
                 metrics["value_losses"].append(float(match.group(1)))
 
             # Match entropy
-            if match := patterns["entropy"].match(line):
+            elif match := patterns["entropy"].match(line):
                 metrics["entropies"].append(float(match.group(1)))
 
     return metrics
-
 
 def plot_metrics(metrics, save_dir=None):
     """
@@ -94,41 +99,14 @@ def plot_metrics(metrics, save_dir=None):
         else:
             plt.show()
 
-
 def visualize_metrics(log_file=None, csv_file=None, save_dir=None):
-    """
-    Parse log or CSV file and generate plots for visualization.
-
-    :param log_file: Path to the log file (optional).
-    :param csv_file: Path to the CSV file (optional).
-    :param save_dir: Directory to save the plots (optional).
-    """
-    if not log_file and not csv_file:
-        raise ValueError("Either log_file or csv_file must be provided.")
-
-    # Parse data from the appropriate source
-    if log_file:
-        print(f"Parsing log file: {log_file}")
-        metrics = parse_log_file(log_file)
-    elif csv_file:
-        print(f"Parsing CSV file: {csv_file}")
-        if not os.path.exists(csv_file):
-            raise FileNotFoundError(f"CSV file not found: {csv_file}")
-        df = pd.read_csv(csv_file)
-        metrics = {col.lower(): df[col].tolist() for col in df.columns}
-
-    # Generate plots
+    metrics = parse_log_file(log_file)
     print("Generating plots...")
     plot_metrics(metrics, save_dir)
 
-
 # Example usage
 if __name__ == "__main__":
-    log_file_path = "logs/fpa_game_logs_20241204-231152.log"
-    csv_file_path = "Model Checkpoints/training_metrics.csv"  # CSV file path
+    log_file_path = "logs/fpa_game_logs_20241204-235814.log"
     save_plots_directory = "plots"  # Directory to save plots
-
-    # Call visualization
     visualize_metrics(log_file=log_file_path, save_dir=save_plots_directory)
-    # OR
-    # visualize_metrics(csv_file=csv_file_path, save_dir=save_plots_directory)
+    print("Visualization complete.")
