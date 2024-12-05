@@ -56,8 +56,7 @@ def save_metrics(metrics, save_dir, episode_count):
         if episode_count == 1:  # Write header on the first save
             f.write("Episode,Reward,Length,PolicyLoss,ValueLoss,Entropy\n")
         for i in range(len(metrics["episode_rewards"])):
-            f.write(f"{episode_count},{metrics['episode_rewards'][i]},{metrics['episode_lengths'][i]},"
-                    f"{metrics['policy_losses'][i]},{metrics['value_losses'][i]},{metrics['entropy'][i]}\n")
+            f.write(f"{episode_count},{metrics['episode_rewards'][i]},{metrics['episode_lengths'][i]},")
 
 def main():
     """
