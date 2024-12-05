@@ -100,41 +100,44 @@ class FPAGame(Env):
         # Update previous observation
         self.prev_observation = new_observation
 
-        # Calculate overall reward
+        # REWARD LOGIC
+        
+        # Initialize reward
         reward = 0
 
         # Reward for hitting the right key
         if action == 1:  # 'right' action
-            reward += 1
+            reward += 2  # Slightly higher reward to encourage progression
 
-        # Determine reward based on frame difference
+        # Frame difference reward
         frame_diff_threshold = 5
         if frame_diff > frame_diff_threshold:
-            reward += round((frame_diff - frame_diff_threshold) * 0.5)
+            reward += (frame_diff - frame_diff_threshold) * 0.5  # Scaled reward
         else:
-            reward -= 5
+            reward -= (frame_diff_threshold - frame_diff) * 0.2  # Gradual penalty
 
         # Reward for completing the level
         if self.check_for_black_screen():
-            logging.info("Entered a door. Checking for wrong door entry...")
             if self.entered_wrong_door():
-                logging.info("Wrong door detected. Penalizing and resetting environment...")
-                reward -= 1000  # Penalize for entering the wrong door
-                done = True  # End the episode
+                reward -= 500  # Reduced penalty for exploration
+                done = True
             else:
-                logging.info("Correct door detected. Rewarding...")
-                reward += 1000  # Reward for completing the level
-                done = True  # End the episode
+                reward += 500  # Normalized reward for completion
+                done = True
         else:
             done = False
 
-        # Reward for collecting swirlies
-        swirlie_reward = 10 * collected_swirlies
+        # Swirlie collection reward
+        swirlie_reward =  10 * collected_swirlies  # Scaled reward
         reward += swirlie_reward
 
         # Penalty for repeated actions
         if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
-            reward -= 5  # Adjust the penalty value as needed
+            reward -= 2  # Reduced penalty to prevent harsh discouragement
+
+        # Update rewards
+        self.total_reward += reward
+        self.rewards_list.append(reward)
 
         # Update recent actions
         self.recent_actions.append(action)
