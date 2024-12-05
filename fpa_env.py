@@ -37,7 +37,7 @@ class FPAGame(Env):
         self.total_reward = 0  # Initialize total reward
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
-        self.template = cv2.imread("image_templates/swirly.png")  # Load the swirly template
+        self.template = cv2.imread("images/image_templates/swirly.png")  # Load the swirly template
 
         # Add the correct template in grayscale
         self.door_template = cv2.imread("fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
@@ -55,7 +55,7 @@ class FPAGame(Env):
         # Load checkpoint images
         self.checkpoints = []
         self.checkpoint_rewards = set()  # Track rewarded checkpoints
-        checkpoint_dir = "game_checkpoint_images/game_checkpoints"
+        checkpoint_dir = "images/game_checkpoint_images/game_checkpoints"
         for i in range(1, 13):
             checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
             checkpoint_image = cv2.imread(checkpoint_path)
@@ -217,7 +217,7 @@ class FPAGame(Env):
             # Load checkpoint images
             self.checkpoints = []
             self.checkpoint_rewards = set()  # Track rewarded checkpoints
-            checkpoint_dir = "game_checkpoint_images/game_checkpoints"
+            checkpoint_dir = "images/game_checkpoint_images/game_checkpoints"
             for i in range(1, 13):
                 checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
                 checkpoint_image = cv2.imread(checkpoint_path)
@@ -342,7 +342,7 @@ class FPAGame(Env):
                     print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
 
                     # Save observations with matching checkpoints drawn
-                    annotated_dir = "annotated_checkpoint_images"
+                    annotated_dir = "images/game_checkpoint_images/annotated_checkpoint_images"
                     os.makedirs(annotated_dir, exist_ok=True)
 
                     # Draw a rectangle around the matched region

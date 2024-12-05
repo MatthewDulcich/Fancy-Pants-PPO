@@ -58,7 +58,7 @@ def get_tab_bar_region(safari_window):
         tab_bar_region['left'] + tab_bar_region['width'],
         tab_bar_region['top'] + tab_bar_region['height']
     ))
-    screenshot.save("tab_bar_region.png")
+    screenshot.save("images/screenshots/tab_bar_region.png")
 
     print("Tab Bar Region:", tab_bar_region)
     return tab_bar_region
