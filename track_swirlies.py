@@ -158,7 +158,7 @@ if __name__ == "__main__":
         cv2.imread("test_images/test_image11.png")
     ]
     
-    template = cv2.imread("swirly.png")
+    template = cv2.imread("image_templates/swirly.png")
     
     # Initialize previous swirlies list
     prev_swirlies = []

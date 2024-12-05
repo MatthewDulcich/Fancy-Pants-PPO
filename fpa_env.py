@@ -37,7 +37,7 @@ class FPAGame(Env):
         self.total_reward = 0  # Initialize total reward
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
-        self.template = cv2.imread("swirly.png")  # Load the swirly template
+        self.template = cv2.imread("image_templates/swirly.png")  # Load the swirly template
 
         # Add the correct template in grayscale
         self.door_template = cv2.imread("fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
