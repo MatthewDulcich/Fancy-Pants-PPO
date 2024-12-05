@@ -85,9 +85,9 @@ class FPAGame(Env):
 
         key = action_map[action]
 
-        # # Perform the action
-        # if key != 'no_action':
-        #     self.key_toggle(key)
+        # Perform the action
+        if key != 'no_action':
+            self.key_toggle(key)
 
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
