@@ -45,8 +45,8 @@ class FPAGame(Env):
         self.server_process = server_process  # Add server process
         self.safari_process = safari_process  # Add Safari process
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
-        self.repeat_action_window = 5  # Window size for checking repeated actions
-        self.recent_actions = deque(maxlen=5)  # Track recent actions
+        self.repeat_action_window = 10  # Window size for checking repeated actions
+        self.recent_actions = deque(maxlen=10)  # Track recent actions
         # self.i = 0  # Initialize counter for debugging
 
         # Load checkpoint images
