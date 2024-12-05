@@ -4,7 +4,6 @@ import pyautogui
 import mss
 import cv2
 import traceback
-import logging
 from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 from collections import deque
@@ -16,12 +15,16 @@ import game_env_setup
 import enter_game
 import launch_fpa_game
 import config_handler as config_handler
+from logging_config import configure_logging
 
 # Load configuration
 config = config_handler.load_config("game_config.json")
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging, _ = configure_logging()  # Ignore the log filename if not needed here
+
+# Example usage in fpa_env.py
+logging.info("FPA environment initialized.")
 
 class FPAGame(Env):
     def __init__(self, game_location, server_process=None, safari_process=None):

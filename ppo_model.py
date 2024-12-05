@@ -2,12 +2,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
-import logging
 import numpy as np
 from collections import deque
+from logging_config import configure_logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging, _ = configure_logging()  # Ignore the log filename if not needed here
+
+# Example usage in ppo_model.py
+logging.info("PPO model initialized.")
 
 class PPOAgent(nn.Module):
     def __init__(self, input_channels, input_height, input_width, n_actions):

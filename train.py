@@ -15,37 +15,16 @@ import safari_operations
 from ppo_model import PPO
 import torch.optim as optim
 import config_handler as config_handler
+from logging_config import configure_logging
+
+# Configure logging
+logging, log_filename = configure_logging()
+
+# Example usage in train.py
+logging.info("Starting training process...")
 
 # Load configuration
 config = config_handler.load_config("game_config.json")
-
-# Ensure the logs directory exists
-logs_dir = os.path.join(os.getcwd(), 'logs')
-os.makedirs(logs_dir, exist_ok=True)
-
-current_time = time.strftime("%Y%m%d-%H%M%S")
-log_filename = os.path.join(logs_dir, f"fpa_game_logs_{current_time}.log")
-
-# Configure logging
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(log_filename),  # Logs written to a file with a unique name
-        logging.StreamHandler()  # Logs displayed in the console
-    ],
-    level=logging.INFO  # Set default logging level to INFO
-)
-
-# Set the logging level for the console handler
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.WARNING)  # Only show WARNING or higher in the console
-console_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-
-# Get the root logger and replace its handlers
-logger = logging.getLogger()
-logger.handlers.clear()  # Remove existing handlers
-logger.addHandler(console_handler)  # Add the console handler
-logger.addHandler(logging.FileHandler(log_filename))  # Add the file handler with a unique name
 
 def main():
     """
