@@ -47,17 +47,6 @@ logger.handlers.clear()  # Remove existing handlers
 logger.addHandler(console_handler)  # Add the console handler
 logger.addHandler(logging.FileHandler(log_filename))  # Add the file handler with a unique name
 
-def save_metrics(metrics, save_dir, episode_count):
-    """
-    Save metrics to a file for later analysis.
-    """
-    metrics_file = os.path.join(save_dir, "metrics.csv")
-    with open(metrics_file, "a") as f:
-        if episode_count == 1:  # Write header on the first save
-            f.write("Episode,Reward,Length,PolicyLoss,ValueLoss,Entropy\n")
-        for i in range(len(metrics["episode_rewards"])):
-            f.write(f"{episode_count},{metrics['episode_rewards'][i]},{metrics['episode_lengths'][i]},")
-
 def main():
     """
     Main function to set up the environment, enter the tutorial level, and run training
@@ -165,13 +154,15 @@ def main():
 
             
             # Logging metrics
-            logging.info(f"Episode {episode_count} | Reward: {episode_reward:.2f} | Length: {episode_length}")
+            logging.info(f"Episode {episode_count}")
+            logging.info(f"Reward: {episode_reward:.2f}")
+            logging.info(f"Length: {episode_length}")
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
             
             # Save metrics periodically
-            if episode_count % config.get('save_interval', 10) == 0:
-                save_metrics(metrics, models_dir, episode_count)
-                logging.info(f"Metrics saved for Episode {episode_count}")
+            if episode_count % config.get('save_interval', 30) == 0:
+                save(os.path.join(models_dir, f"ppo_model_{current_time}.pt"), ppo)
+                logging.info(f"Model saved at episode {episode_count}")
             
             # Timeout handling
             if time.time() - start_time > timeout:
