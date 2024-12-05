@@ -47,6 +47,7 @@ class FPAGame(Env):
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
         self.repeat_action_window = 5  # Window size for checking repeated actions
         self.recent_actions = deque(maxlen=5)  # Track recent actions
+        # self.i = 0  # Initialize counter for debugging
 
         # Load checkpoint images
         self.checkpoints = []
@@ -88,6 +89,10 @@ class FPAGame(Env):
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
 
+        # save the original scale frame .png
+        # cv2.imwrite(f"original_scale_frame_{self.i}.png", original_scale_frame)
+        # self.i += 1
+
         # Store the original scale frame in the deque
         self.recent_full_res_observations.append(original_scale_frame)
 
@@ -107,36 +112,35 @@ class FPAGame(Env):
         # Update previous observation
         self.prev_observation = new_observation
 
-        # Calculate overall reward
+        # REWARD LOGIC
+        
+        # Initialize reward
         reward = 0
 
         # Reward for hitting the right key
         if action == 1:  # 'right' action
-            reward += 1
+            reward += 2  # Slightly higher reward to encourage progression
 
-        # Determine reward based on frame difference
+        # Frame difference reward
         frame_diff_threshold = 5
         if frame_diff > frame_diff_threshold:
-            reward += round((frame_diff - frame_diff_threshold) * 0.5)
+            reward += (frame_diff - frame_diff_threshold) * 0.5  # Scaled reward
         else:
-            reward -= 5
+            reward -= (frame_diff_threshold - frame_diff) * 0.2  # Gradual penalty
 
         # Reward for completing the level
         if self.check_for_black_screen():
-            logging.info("Entered a door. Checking for wrong door entry...")
             if self.entered_wrong_door():
-                logging.info("Wrong door detected. Penalizing and resetting environment...")
-                reward -= 1000  # Penalize for entering the wrong door
-                done = True  # End the episode
+                reward -= 500  # Reduced penalty for exploration
+                done = True
             else:
-                logging.info("Correct door detected. Rewarding...")
-                reward += 1000  # Reward for completing the level
-                done = True  # End the episode
+                reward += 500  # Normalized reward for completion
+                done = True
         else:
             done = False
 
-        # Reward for collecting swirlies
-        swirlie_reward = 10 * collected_swirlies
+        # Swirlie collection reward
+        swirlie_reward =  10 * collected_swirlies  # Scaled reward
         reward += swirlie_reward
 
         # Reward for reaching a checkpoint
@@ -146,7 +150,11 @@ class FPAGame(Env):
 
         # Penalty for repeated actions
         if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
-            reward -= 5  # Adjust the penalty value as needed
+            reward -= 2  # Reduced penalty to prevent harsh discouragement
+
+        # Update rewards
+        self.total_reward += reward
+        self.rewards_list.append(reward)
 
         # Update recent actions
         self.recent_actions.append(action)
@@ -184,7 +192,7 @@ class FPAGame(Env):
             _, max_val, _, _ = cv2.minMaxLoc(result)
 
             # Define a similarity threshold (adjust as needed)
-            similarity_threshold = 0.6
+            similarity_threshold = 0.9
             if max_val >= similarity_threshold:
                 logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
                 return True
@@ -267,7 +275,6 @@ class FPAGame(Env):
 
         # Capture the game region using persistent mss context
         screenshot = self.sct.grab(monitor)
-        # print("Screenshot shape:", screenshot.size)
 
         # Convert to numpy array and keep only the grayscale channel
         rgb_frame = np.array(screenshot, dtype=np.uint8)[:, :, :3]  # Use only the first three channels (BGR)

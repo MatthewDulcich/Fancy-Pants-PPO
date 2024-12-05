@@ -1,209 +1,134 @@
-from collections import deque
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.distributions import Categorical
 import logging
+import numpy as np
+from collections import deque
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class PPOAgent(nn.Module):
-    def __init__(self, input_channels, input_height, input_width, output_dim):
+    def __init__(self, input_channels, input_height, input_width, n_actions):
         super(PPOAgent, self).__init__()
-
-        # Convolutional layers for feature extraction
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4),  # Output: 32x(H/4)x(W/4)
+            nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),              # Output: 64x(H/8)x(W/8)
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),              # Output: 64x(H/8)x(W/8)
-            nn.ReLU()
-        )
-
-        # Compute the flattened size after convolutions
-        self.flatten_size = self._get_conv_output_size(input_height, input_width)
-
-        # Fully connected layers
-        self.shared_layers = nn.Sequential(
-            nn.Linear(self.flatten_size, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
         )
 
-        # Policy and value heads
-        self.policy_head = nn.Linear(128, output_dim)  # Output probabilities for actions
-        self.value_head = nn.Linear(128, 1)           # Output state value
+        conv_output_height = input_height // 8
+        conv_output_width = input_width // 8
+        flattened_size = 64 * conv_output_height * conv_output_width
 
-    def _get_conv_output_size(self, height, width):
-        """
-        Compute the size of the flattened output after convolutional layers.
-        """
-        dummy_input = torch.zeros(1, 1, height, width)  # 1xCxHxW
-        conv_output = self.conv_layers(dummy_input)
-        return int(torch.prod(torch.tensor(conv_output.shape[1:])).item())  # Flattened size
+        self.shared_fc = nn.Sequential(
+            nn.Linear(flattened_size, 128),
+            nn.ReLU(),
+        )
+
+        self.policy_head = nn.Linear(128, n_actions)
+        self.value_head = nn.Linear(128, 1)
 
     def forward(self, x):
-        # print(f"Input shape in forward: {x.shape}")  # Debugging input shape
-        if len(x.shape) == 4:  # Input is (B, C, H, W)
-            pass
-        elif len(x.shape) == 3:  # (H, W, C)
-            x = x.unsqueeze(0).permute(0, 3, 1, 2)
-        elif len(x.shape) == 2:  # Flattened input
-            raise ValueError("Input is flattened; expected image-like input for Conv layers.")
-        else:
-            raise ValueError(f"Unexpected input shape: {x.shape}")
-
-        x = self.conv_layers(x)  # Apply convolutional layers
-        x = x.view(x.size(0), -1)  # Flatten
-        x = self.shared_layers(x)  # Fully connected layers
+        x = self.conv_layers(x)
+        x = x.view(x.size(0), -1)
+        x = self.shared_fc(x)
         policy_logits = self.policy_head(x)
         state_value = self.value_head(x)
         return policy_logits, state_value
 
-def collect_rollouts(env, policy, n_steps=2048):
-    """
-    Collect trajectories (state, action, reward, next_state) for PPO training.
 
-    :param env: FPAGame environment.
-    :param policy: PPO policy network.
-    :param n_steps: Number of steps to collect per rollout.
-    :return: Rollout data (states, actions, rewards, values, log_probs, dones).
-    """
-    states = deque(maxlen=n_steps)
-    actions = deque(maxlen=n_steps)
-    rewards = deque(maxlen=n_steps)
-    log_probs = deque(maxlen=n_steps)
-    values = deque(maxlen=n_steps)
-    dones = deque(maxlen=n_steps)
+class PPO:
+    def __init__(self, input_channels, input_height, input_width, n_actions, lr=1e-4, gamma=0.98, epsilon=0.3, entropy_coef=0.02):
+        self.policy = PPOAgent(input_channels, input_height, input_width, n_actions)
+        self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.entropy_coef = entropy_coef
 
-    state = env.reset()  # Reset the environment
-    print("Observation shape:", state.shape)
-    for step in range(n_steps):
-        # Convert state to a PyTorch tensor
-        state_tensor = torch.tensor(state, dtype=torch.float32)
+    def collect_rollouts(self, env, n_steps=2048, max_buffer_size=10000):
+        states = deque(maxlen=max_buffer_size)
+        actions = deque(maxlen=max_buffer_size)
+        rewards = deque(maxlen=max_buffer_size)
+        log_probs = deque(maxlen=max_buffer_size)
+        values = deque(maxlen=max_buffer_size)
+        dones = deque(maxlen=max_buffer_size)
 
-        # If the observation is grayscale (1 channel):
-        if len(state_tensor.shape) == 3:  # (C, H, W)
-            state_tensor = state_tensor.unsqueeze(0)  # Add batch dimension -> (B, C, H, W)
-        elif len(state_tensor.shape) == 2:  # (H, W)
-            state_tensor = state_tensor.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions -> (B, C, H, W)
-        else:
-            raise ValueError(f"Unexpected observation shape: {state_tensor.shape}")
+        state = env.reset()
 
-        # Forward pass through the policy network
-        policy_logits, state_value = policy(state_tensor)
-        action_distribution = torch.distributions.Categorical(logits=policy_logits)
-        action = action_distribution.sample()  # Sample an action
-        log_prob = action_distribution.log_prob(action)  # Log probability of the action
+        for _ in range(n_steps):
+            state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0) / 255.0
+            policy_logits, state_value = self.policy(state_tensor)
+            action_dist = Categorical(logits=policy_logits)
+            action = action_dist.sample()
+            log_prob = action_dist.log_prob(action)
 
-        # Take the action in the environment
-        next_state, reward, done, info = env.step(action.item())
+            next_state, reward, done, _ = env.step(action.item())
 
-        # Log info
-        logging.info(
-            f"Collected swirlies: {info['swirlies collected']:<3} | Total swirlies: {info['swirlies detected']:<3} | "
-            f"Swirles reward: {info['swirlies reward']:<5} | Episode reward: {info['episode reward']:<5} | "
-            f"Frame Difference: {info['frame difference']:<3} | Total Reward: {info['total reward']:<5} | "
-            f"Checkpoint Reward: {info['checkpoint reward']:<5} | Checkpoint ID: {str(info['checkpoint id']):<4} | "
-            f"Action: {action.item():<2} | Done: {str(done):<5} | Last 10 rewards: {str(info['last 10 rewards']):<50}"
+            states.append(state)
+            actions.append(action.item())
+            rewards.append(reward)
+            log_probs.append(log_prob.item())
+            values.append(state_value.item())
+            dones.append(done)
+
+            state = next_state if not done else env.reset()
+
+        return (
+            torch.tensor(np.array(states), dtype=torch.float32) / 255.0,
+            torch.tensor(np.array(actions), dtype=torch.long),
+            torch.tensor(np.array(rewards), dtype=torch.float32),
+            torch.tensor(np.array(log_probs), dtype=torch.float32),
+            torch.tensor(np.array(values), dtype=torch.float32),
+            torch.tensor(np.array(dones), dtype=torch.float32),
         )
 
-        if done:
-            state = env.reset()  # Reset on episode completion
+    def compute_ppo_loss(self, states, actions, rewards, log_probs, values, dones):
+        returns = []
+        discounted_sum = 0
+        for reward, done in zip(reversed(rewards), reversed(dones)):
+            discounted_sum = reward + self.gamma * discounted_sum * (1 - done)
+            returns.insert(0, discounted_sum)
+        returns = torch.tensor(returns, dtype=torch.float32)
 
-        # Store trajectory data
-        states.append(state.flatten())  # Preprocessed and flattened
-        actions.append(action.item())
-        rewards.append(reward)
-        log_probs.append(log_prob.item())
-        values.append(state_value.item())
-        dones.append(done)
+        advantages = returns - values.detach()
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        # Prepare for the next step
-        state = next_state
-        if done:
-            state = env.reset()  # Reset on episode completion
+        policy_logits, state_values = self.policy(states)
+        action_dist = Categorical(logits=policy_logits)
+        new_log_probs = action_dist.log_prob(actions)
+        entropy = action_dist.entropy().mean()
 
-    # Convert deque to numpy arrays for better tensor conversion
-    states = np.array(states)
-    actions = np.array(actions)
-    rewards = np.array(rewards)
-    log_probs = np.array(log_probs)
-    values = np.array(values)
-    dones = np.array(dones)
+        ratios = torch.exp(new_log_probs - log_probs)
+        clipped_ratios = torch.clamp(ratios, 1 - self.epsilon, 1 + self.epsilon)
+        policy_loss = -torch.min(ratios * advantages, clipped_ratios * advantages).mean()
 
-    return states, actions, rewards, log_probs, values, dones
+        value_loss = (returns - state_values).pow(2).mean()
 
-def compute_ppo_loss(
-    policy, states, actions, rewards, log_probs, values, dones, gamma=0.99, epsilon=0.2, entropy_coef=0.01
-):
-    """
-    Compute PPO loss (policy, value, and entropy components).
-    """
-    # Compute returns and advantages
-    returns = []
-    running_return = 0
-    for reward, done in zip(reversed(rewards), reversed(dones)):
-        running_return = reward + gamma * running_return * (1 - done)
-        returns.insert(0, running_return)
+        # Log calculations
+        logging.info("=== PPO Loss Calculation ===")
+        logging.info(f"Returns: {returns[:5]}...")
+        logging.info(f"Advantages: {advantages[:5]}...")
+        logging.info(f"Policy Ratios: {ratios.mean().item():.4f}")
+        logging.info(f"Clipped Ratios: {clipped_ratios.mean().item():.4f}")
+        logging.info(f"Policy Loss: {policy_loss.item():.4f}")
+        logging.info(f"Value Loss: {value_loss.item():.4f}")
+        logging.info(f"Entropy: {entropy.item():.4f}")
+        total_loss = policy_loss + 0.5 * value_loss - self.entropy_coef * entropy
+        logging.info(f"Total Loss: {total_loss.item():.4f}")
 
-    returns = torch.tensor(returns, dtype=torch.float32)
-    values = torch.tensor(values, dtype=torch.float32)
-    advantages = returns - values
-    std_adv = advantages.std() + 1e-8  # Avoid division by zero
-    advantages = (advantages - advantages.mean()) / std_adv
+        return total_loss
 
-    # Log advantage stats
-    logging.info(
-        f"Advantages mean: {advantages.mean().item():.4f}, std: {advantages.std().item():.4f}"
-    )
-
-    # Reshape states back to (B, C, H, W)
-    batch_size = len(states)
-    state_tensor = torch.tensor(states, dtype=torch.float32).view(batch_size, 1, 150, 200)
-
-    # Convert actions to tensor
-    action_tensor = torch.tensor(actions, dtype=torch.long)
-
-    # Forward pass through the policy
-    policy_logits, state_values = policy(state_tensor)
-    action_distribution = torch.distributions.Categorical(logits=policy_logits)
-    new_log_probs = action_distribution.log_prob(action_tensor)
-
-    # Handle log_probs dtype explicitly
-    log_probs_tensor = torch.tensor(log_probs, dtype=new_log_probs.dtype)
-
-    # Policy loss (clipped surrogate objective)
-    ratios = torch.exp(new_log_probs - log_probs_tensor)
-    clipped_ratios = torch.clamp(ratios, 1 - epsilon, 1 + epsilon)
-    policy_loss = -torch.min(ratios * advantages, clipped_ratios * advantages).mean()
-
-    # Value loss
-    value_loss = (returns - state_values).pow(2).mean()
-
-    # Entropy bonus
-    entropy = action_distribution.entropy().mean()
-
-    # Log individual loss components
-    logging.info(f"Policy Loss: {policy_loss.item():.4f} | Value Loss: {value_loss.item():.4f} | Entropy: {entropy.item():.4f}")
-    logging.info(f"Entropy Coefficient: {entropy_coef}")
-
-    # Total loss
-    total_loss = policy_loss + 0.5 * value_loss - entropy_coef * entropy
-    return total_loss
-
-
-def update_policy(policy, optimizer, states, actions, rewards, log_probs, values, dones):
-    """
-    Update the PPO policy using the collected rollouts.
-
-    :return: Computed PPO loss for logging.
-    """
-    optimizer.zero_grad()
-    loss = compute_ppo_loss(policy, states, actions, rewards, log_probs, values, dones)
-    loss.backward()
-    optimizer.step()
-    return loss.item()  # Return the loss value for logging
+    def update_policy(self, states, actions, rewards, log_probs, values, dones, k_epochs=4, clip_grad=0.5):
+        for epoch in range(k_epochs):
+            self.optimizer.zero_grad()
+            loss = self.compute_ppo_loss(states, actions, rewards, log_probs, values, dones)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), max_norm=clip_grad)
+            self.optimizer.step()
+            if epoch == 0 or epoch == k_epochs - 1:
+                logging.info(f"Epoch {epoch + 1}/{k_epochs} | PPO Loss: {loss.item():.4f}")

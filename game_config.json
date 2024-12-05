@@ -2,9 +2,10 @@
     "PORT": 8000,
     "GAME_URL": "http://localhost:8000/launch_ruffle.html",
     "SAFARI_WEBDRIVER_URL": "http://localhost:4444",
+    "rollout_steps": 1024,
     "down_scaled": {
         "width": 200,
-        "height": 150
+        "height": 160
     },
     "timeout_mins": 1,
     "save_images": true
