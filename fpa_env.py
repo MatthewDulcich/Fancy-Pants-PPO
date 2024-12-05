@@ -40,7 +40,7 @@ class FPAGame(Env):
         self.template = cv2.imread("images/image_templates/swirly.png")  # Load the swirly template
 
         # Add the correct template in grayscale
-        self.door_template = cv2.imread("fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
+        self.door_template = cv2.imread("images/image_templates/fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
 
         # Store recent full-res grayscale observations
         self.recent_full_res_observations = deque(maxlen=5)  # Store the last 5 observations
