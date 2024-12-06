@@ -181,3 +181,5 @@ tab_bar_region.png
 ppo_policy_episode*
 temp*
 Saved Artifacts/ppo_model*
+video demos/
+plots/*
