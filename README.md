@@ -44,7 +44,7 @@ We implemented our algorithm on [FPA: World 3.](https://www.bornegames.com/games
   ```
 
 ### Step 4: Add Fancy Pants .swf Files
-- Place the `.swf` files in the `Fancy-Pants-PPO` directory. The structure should look like this:
+- Place your legally obtained "The Fancy Pants Adventures: World 3" `.swf` file in the `Fancy-Pants-PPO` directory. It should be renamed to 'fpaworld3.swf'. The structure should look like this:
   ```
   fpaworld3.swf
   ```
