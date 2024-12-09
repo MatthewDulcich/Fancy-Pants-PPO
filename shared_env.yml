@@ -269,6 +269,7 @@ dependencies:
     - trio==0.27.0
     - trio-websocket==0.11.1
     - urllib3==2.2.3
+    - wandb==0.12.4
     - websocket-client==1.8.0
     - wsproto==1.2.0
 prefix: /Users/matthewdulcich/miniforge3/envs/rl_env

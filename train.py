@@ -16,6 +16,7 @@ from ppo_model import PPO
 import torch.optim as optim
 import config_handler as config_handler
 from logging_config import configure_logging
+import wandb
 
 # Configure logging
 logging, log_filename = configure_logging()
@@ -23,8 +24,18 @@ logging, log_filename = configure_logging()
 # Example usage in train.py
 logging.info("Starting training process...")
 
+
 # Load configuration
 config = config_handler.load_config("game_config.json")
+
+# Load W&B API key from secret_key.txt
+with open("secret_key.txt", "r") as file:
+    content = file.read().strip()
+    entity, api_key = content.split(',')
+
+# Configure W&B
+wandb.login(key=api_key)
+wandb.init(project="fancy-pants-ppo", entity=entity, config=config)
 
 def main():
     """
@@ -142,28 +153,46 @@ def main():
             logging.info(f"Reward: {episode_reward:.2f}")
             logging.info(f"Length: {episode_length}")
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
+
+            # Log metrics to W&B
+            wandb.log({
+                "episode": episode_count,
+                "episode_reward": episode_reward,
+                "episode_length": episode_length,
+                "ppo_loss": ppo_loss
+            })
             
-            # Save metrics periodically
+            # QUESTION: Duplicate code?
+            # # Save metrics periodically
             
-            # Calculate episode-level metrics
-            episode_reward = rewards.sum().item()
-            episode_length = len(rewards)
+            # # Calculate episode-level metrics
+            # episode_reward = rewards.sum().item()
+            # episode_length = len(rewards)
             
-            # Update metrics dictionary
-            metrics["episode_rewards"].append(episode_reward)
-            metrics["episode_lengths"].append(episode_length)
+            # # Update metrics dictionary
+            # metrics["episode_rewards"].append(episode_reward)
+            # metrics["episode_lengths"].append(episode_length)
 
             
-            # Logging metrics
-            logging.info(f"Episode {episode_count}")
-            logging.info(f"Reward: {episode_reward:.2f}")
-            logging.info(f"Length: {episode_length}")
-            logging.info(f"PPO Loss: {ppo_loss:.4f}")
+            # # Logging metrics
+            # logging.info(f"Episode {episode_count}")
+            # logging.info(f"Reward: {episode_reward:.2f}")
+            # logging.info(f"Length: {episode_length}")
+            # logging.info(f"PPO Loss: {ppo_loss:.4f}")
+
+            # # Log metrics to W&B
+            # wandb.log({
+            #     "episode": episode_count,
+            #     "episode_reward": episode_reward,
+            #     "episode_length": episode_length,
+            #     "ppo_loss": ppo_loss
+            # })
             
             # Save metrics periodically
             if episode_count % 10 == 0:
                 save(ppo.policy.state_dict(), os.path.join(models_dir, f"ppo_model_{episode_count}.pt"))
                 logging.info(f"Model saved at episode {episode_count}")
+                wandb.log({"model_saved_at_episode": episode_count})
             
             # Timeout handling
             if time.time() - start_time > timeout:
@@ -182,6 +211,7 @@ def main():
         elif server_process and safari_process:
             game_env_setup.cleanup(server_process, safari_process)
         logging.info("All processes terminated successfully. Exiting.")
+        wandb.finish()
 
 if __name__ == "__main__":
     env = None
