@@ -5,6 +5,7 @@ from torch.distributions import Categorical
 import numpy as np
 from collections import deque
 from logging_config import configure_logging
+import wandb
 
 # Configure logging
 logging, _ = configure_logging()  # Ignore the log filename if not needed here
@@ -79,6 +80,7 @@ class PPO:
             state = next_state if not done else env.reset()
 
             logging.info(f"Step {i + 1}/{n_steps} | Action: {action.item()} | Reward: {reward} | Done: {done}")
+            wandb.log({"Step": i + 1, "Action": action.item(), "Reward": reward})
 
         return (
             torch.tensor(np.array(states), dtype=torch.float32) / 255.0,
