@@ -60,15 +60,16 @@ def get_tab_bar_region(safari_window, offset=0):
     ))
     screenshot.save("images/screenshots/tab_bar_region.png")
 
-    print("Tab Bar Region:", tab_bar_region)
+    # print("Tab Bar Region:", tab_bar_region)
     return tab_bar_region
 
-def handle_reload_bar(tab_bar_region):
+def handle_reload_bar(tab_bar_region, print_detected_text=False):
     """
     Detects and dismisses the 'This webpage was reloaded' bar using the tab bar region.
     """
     detected_text = extract_text_from_region(tab_bar_region)
-    print("Detected Text in Reload Bar:", detected_text)
+    if print_detected_text:
+        print("Detected Text in Reload Bar:", detected_text)
 
     if "was reloaded" in detected_text: # Customize this based on picture quality (I removed the "This webpage" part)
         print("Reload bar detected. Attempting to dismiss it...")
@@ -83,10 +84,11 @@ def handle_reload_bar(tab_bar_region):
         print("Dismissed the reload bar.")
         return True
     else:
-        print("Reload bar not detected.")
+        if print_detected_text:
+            print("Reload bar not detected.")
         return False
 
-def wait_for_play_now_text(region, target_text, timeout=60, check_interval=1, safari_window=None, tab_bar_region=None, offset = 0):
+def wait_for_play_now_text(region, target_text, timeout=60, check_interval=1, print_detected_text=False):
     """
     Waits until the specified text appears in a given screen region.
     """
@@ -95,18 +97,14 @@ def wait_for_play_now_text(region, target_text, timeout=60, check_interval=1, sa
     iteration = 0
     while time.time() - start_time < timeout:
         detected_text = extract_text_from_region(region)
-        print(f"Iteration {iteration} / {timeout}: Detected Text: {detected_text}")
+        if print_detected_text:
+            print(f"Iteration {iteration} / {timeout}: Detected Text: {detected_text}")
 
         if target_text.lower() in detected_text.lower():
             return True
 
         time.sleep(check_interval)  # Wait before checking again
         iteration += 1
-
-            # Page reload check (inserted between Step 2 and Step 3) # NOTE: I added this here
-        tab_bar_region = get_tab_bar_region(safari_window, offset = offset)
-        if handle_reload_bar(tab_bar_region):
-            print("Handled reload bar. Proceeding to click play again")
 
     return False  # Timeout reached
 
@@ -151,7 +149,7 @@ if __name__ == "__main__":
 
     # Handle reload bar
     tab_bar_region = get_tab_bar_region(safari_window)
-    handle_reload_bar(tab_bar_region)
+    handle_reload_bar(tab_bar_region, print_detected_text=True)
 
     # Wait for the "Play Again" text and click
     if wait_for_play_now_textbar(region=button_region_adjusted, target_text="Play Again"):

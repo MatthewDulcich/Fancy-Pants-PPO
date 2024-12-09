@@ -16,6 +16,10 @@ import enter_game
 import launch_fpa_game
 import config_handler as config_handler
 from logging_config import configure_logging
+from safari_operations import get_safari_window_coordinates
+from pytesseract_interaction import get_tab_bar_region, handle_reload_bar
+
+
 
 # Load configuration
 config = config_handler.load_config("game_config.json")
@@ -73,6 +77,11 @@ class FPAGame(Env):
             self.key_states[key] = False
 
     def step(self, action):
+
+        # Check if the tab bar is present
+        if self.tab_bar_check(offset=25):
+            done = True
+
         # action map
         action_map = {
             0: 'left',         # press: Left
@@ -359,6 +368,15 @@ class FPAGame(Env):
                     cv2.imwrite(annotated_path, annotated_image)
 
         return checkpoint_reward, checkpoint_id
+    
+    def tab_bar_check(self, offset=25):
+            safari_window = get_safari_window_coordinates()
+
+            tab_bar_region = get_tab_bar_region(safari_window, offset = offset)
+            if handle_reload_bar(tab_bar_region):
+                print("Handled reload bar. Proceeding to click play again")
+                return True
+
 
     def cleanup_resources(self, server_process, safari_process):
         """
