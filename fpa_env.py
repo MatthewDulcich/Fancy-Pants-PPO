@@ -198,7 +198,7 @@ class FPAGame(Env):
             _, max_val, _, _ = cv2.minMaxLoc(result)
 
             # Define a similarity threshold (adjust as needed)
-            similarity_threshold = 0.9
+            similarity_threshold = 0.45
             logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
             if max_val >= similarity_threshold:
                 return True

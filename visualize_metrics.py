@@ -109,7 +109,11 @@ def visualize_metrics(log_file=None, csv_file=None, save_dir=None):
 
 # Example usage
 if __name__ == "__main__":
+<<<<<<< HEAD
     log_file_path = "logs/fpa_game_logs_20241205-044749.log"
+=======
+    log_file_path = "logs/fpa_game_logs_20241208-235745.log"
+>>>>>>> d448cfd (updated matching for 1080p)
     save_plots_directory = "plots"  # Directory to save plots
     visualize_metrics(log_file=log_file_path, save_dir=save_plots_directory)
     print("Visualization complete.")

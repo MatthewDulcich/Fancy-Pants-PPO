@@ -25,19 +25,23 @@ def enter_game(window, pre_loaded=False):
     if not safari_window:
         print("Failed to fetch Safari window coordinates.")
         return
+    
+    # Add offset which sometimes triggers
+    offset = 25
+
 
     # Page reload check (inserted between Step 2 and Step 3)
-    tab_bar_region = get_tab_bar_region(safari_window)
+    tab_bar_region = get_tab_bar_region(safari_window, offset = offset)
     if handle_reload_bar(tab_bar_region):
         print("Handled reload bar. Proceeding to click play again")
 
     # Step 3: Define button region and adjust for Safari window position
-    play_again_button_region = {"left": 200, "top": 300, "width": 140, "height": 40}  # Relative coordinates (x, y, width, height) NOTE: I changed this to 325 from 300
+    play_again_button_region = {"left": 200, "top": 300 + offset, "width": 140, "height": 40}  # Relative coordinates (x, y, width, height) NOTE: I changed this to 325 from 300
     adjusted_button_region = adjust_for_menu_bar(safari_window, play_again_button_region)
     print("Adjusted Button Region:", adjusted_button_region)
 
     # Step 4: Wait for the "Play Now" text and click
-    if wait_for_play_now_text(region=adjusted_button_region, target_text="Play Now"):
+    if wait_for_play_now_text(region=adjusted_button_region, target_text="Play Now", safari_window=safari_window, tab_bar_region=tab_bar_region, offset = offset):
         print("Detected 'Play Now'. Clicking the button...")
         click_center_of_region(adjusted_button_region)
     else:

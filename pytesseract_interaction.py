@@ -32,11 +32,11 @@ def extract_text_from_region(region):
 
 # --- OCR and Interaction Functions ---
 
-def get_tab_bar_region(safari_window):
+def get_tab_bar_region(safari_window, offset=0):
     """
     Computes the region of the horizontal tab bar within the Safari window.
     """
-    safari_top = safari_window['top'] + 50  # Add top bar offset
+    safari_top = safari_window['top'] + 50 + offset # Add top bar offset
     safari_left = safari_window['left']
     safari_width = safari_window['width']
 
@@ -70,7 +70,7 @@ def handle_reload_bar(tab_bar_region):
     detected_text = extract_text_from_region(tab_bar_region)
     print("Detected Text in Reload Bar:", detected_text)
 
-    if "This webpage was reloaded" in detected_text:
+    if "was reloaded" in detected_text: # Customize this based on picture quality (I removed the "This webpage" part)
         print("Reload bar detected. Attempting to dismiss it...")
         # Click the "X" button
         x_button_coords = (
@@ -86,7 +86,7 @@ def handle_reload_bar(tab_bar_region):
         print("Reload bar not detected.")
         return False
 
-def wait_for_play_now_text(region, target_text, timeout=60, check_interval=1):
+def wait_for_play_now_text(region, target_text, timeout=60, check_interval=1, safari_window=None, tab_bar_region=None, offset = 0):
     """
     Waits until the specified text appears in a given screen region.
     """
@@ -102,6 +102,11 @@ def wait_for_play_now_text(region, target_text, timeout=60, check_interval=1):
 
         time.sleep(check_interval)  # Wait before checking again
         iteration += 1
+
+            # Page reload check (inserted between Step 2 and Step 3) # NOTE: I added this here
+        tab_bar_region = get_tab_bar_region(safari_window, offset = offset)
+        if handle_reload_bar(tab_bar_region):
+            print("Handled reload bar. Proceeding to click play again")
 
     return False  # Timeout reached
 
