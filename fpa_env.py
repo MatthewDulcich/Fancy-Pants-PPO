@@ -8,6 +8,7 @@ from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 from collections import deque
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 # Script imports
 from fpa_env_functions.track_swirlies import track_swirlies
@@ -95,8 +96,8 @@ class FPAGame(Env):
         key = action_map[action]
 
         # Perform the action
-        if key != 'no_action':
-            self.key_toggle(key)
+        # if key != 'no_action':
+        self.key_toggle(key)
 
         # Capture observation after action using `get_observation`
         new_observation, original_scale_frame = self.get_observation()
@@ -125,13 +126,35 @@ class FPAGame(Env):
         self.prev_observation = new_observation
 
         # REWARD LOGIC
+        # Init reward/penalties
+        num_keys_chained = 2
+        num_keys_penalty = 5
+        right_key_reward = 0 # 2
+        frame_diff_threshold = 5
+        complete_level_reward = 500
+        wrong_door_penalty = -500
+        scale_swirlies_reward = 0 # 10
+        repeated_action_penalty = 0 # 5
+        opposite_actions_penalty = 3 # 5
         
         # Initialize reward
         reward = 0
 
+        # Penalty for pressing up and down at the same time
+        if self.key_states.get('up', False) and self.key_states.get('down', False):
+            reward -= opposite_actions_penalty  # Apply a penalty for conflicting vertical actions
+
+        # Penalty for pressing right and left at the same time
+        if self.key_states.get('right', False) and self.key_states.get('left', False):
+            reward -= opposite_actions_penalty  # Apply a penalty for conflicting horizontal actions
+
+        # Penalty for chaining more than 2 keys at once
+        if sum(self.key_states.values()) > num_keys_chained:
+            reward -= num_keys_penalty  # Apply a penalty if more than 2 keys are pressed simultaneously
+
         # Reward for hitting the right key
         if action == 1:  # 'right' action
-            reward += 2  # Slightly higher reward to encourage progression
+            reward += right_key_reward  # Slightly higher reward to encourage progression
 
         # Frame difference reward
         frame_diff_threshold = 5
@@ -145,27 +168,28 @@ class FPAGame(Env):
             logging.info("Black screen detected. Checking which door agent entered...")
             if self.entered_wrong_door():
                 logging.info("Entered the wrong door. Level failed. Reward: -500")
-                reward -= 500  # Reduced penalty for exploration
+                reward -= wrong_door_penalty  # Reduced penalty for exploration
                 done = True
             else:
-                reward += 500  # Normalized reward for completion
+                reward += complete_level_reward  # Normalized reward for completion
                 logging.info("Level completed successfully!!! Reward: 500")
                 done = True
         else:
             done = False
 
         # Swirlie collection reward
-        swirlie_reward =  10 * collected_swirlies  # Scaled reward
+        swirlie_reward =  scale_swirlies_reward * collected_swirlies  # Scaled reward
         reward += swirlie_reward
 
         # Reward for reaching a checkpoint
         checkpoint_reward, checkpoint_id = self.checkpoint_matching(original_scale_frame)
         reward += checkpoint_reward
-        # print(f"Checkpoint reward: {checkpoint_reward}")
+        if checkpoint_reward != 0:
+            print(f"Checkpoint reward: {checkpoint_reward}")
 
         # Penalty for repeated actions
         if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
-            reward -= 2  # Reduced penalty to prevent harsh discouragement
+            reward -= repeated_action_penalty  # Reduced penalty to prevent harsh discouragement
 
         # Update rewards
         self.total_reward += reward
@@ -331,15 +355,16 @@ class FPAGame(Env):
         
         Returns:
             checkpoint_reward (int): The reward for reaching a checkpoint.
+            checkpoint_id (int): The ID of the matched checkpoint.
         """
         checkpoint_reward = 0
-        threshold = 0.8  # Adjust the threshold as needed
+        threshold = 0.9  # Adjust the threshold as needed
         checkpoint_id = None
 
         # Ensure observation is a valid NumPy array
         gray_observation = np.array(observation, dtype=np.uint8)
 
-        for idx, checkpoint in enumerate(self.checkpoints):
+        def match_template(idx, checkpoint):
             # Perform template matching
             result = cv2.matchTemplate(gray_observation, checkpoint, cv2.TM_CCOEFF_NORMED)
             
@@ -348,24 +373,35 @@ class FPAGame(Env):
 
             if max_val >= threshold and idx not in self.checkpoint_rewards:
                 self.checkpoint_rewards.add(idx)
-                checkpoint_reward += 100  # Adjust the reward value as needed
-                checkpoint_id = idx + 1
-                if print_and_save:
-                    print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
+                print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
+                return idx, max_val, max_loc
+            return None
 
-                    # Save observations with matching checkpoints drawn
-                    annotated_dir = "images/game_checkpoint_images/annotated_checkpoint_images"
-                    os.makedirs(annotated_dir, exist_ok=True)
+        # Use ThreadPoolExecutor for parallel processing
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(match_template, idx, checkpoint) for idx, checkpoint in enumerate(self.checkpoints)]
+            for future in futures:
+                result = future.result()
+                if result:
+                    idx, max_val, max_loc = result
+                    checkpoint_reward += 100  # Adjust the reward value as needed
+                    checkpoint_id = idx + 1
+                    if print_and_save:
+                        print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
 
-                    # Draw a rectangle around the matched region
-                    top_left = max_loc
-                    bottom_right = (top_left[0] + checkpoint.shape[1], top_left[1] + checkpoint.shape[0])
-                    annotated_image = observation.copy()
-                    cv2.rectangle(annotated_image, top_left, bottom_right, (0, 255, 0), 2)
+                        # Save observations with matching checkpoints drawn
+                        annotated_dir = "images/game_checkpoint_images/annotated_checkpoint_images"
+                        os.makedirs(annotated_dir, exist_ok=True)
 
-                    # Save the annotated image
-                    annotated_path = os.path.join(annotated_dir, f"annotated_checkpoint_{idx + 1}.png")
-                    cv2.imwrite(annotated_path, annotated_image)
+                        # Draw a rectangle around the matched region
+                        top_left = max_loc
+                        bottom_right = (top_left[0] + self.checkpoints[idx].shape[1], top_left[1] + self.checkpoints[idx].shape[0])
+                        annotated_image = observation.copy()
+                        cv2.rectangle(annotated_image, top_left, bottom_right, (0, 255, 0), 2)
+
+                        # Save the annotated image
+                        annotated_path = os.path.join(annotated_dir, f"annotated_checkpoint_{idx + 1}.png")
+                        cv2.imwrite(annotated_path, annotated_image)
 
         return checkpoint_reward, checkpoint_id
     
@@ -375,6 +411,7 @@ class FPAGame(Env):
             tab_bar_region = get_tab_bar_region(safari_window, offset = offset)
             if handle_reload_bar(tab_bar_region):
                 print("Handled reload bar. Proceeding to click play again")
+                self.reset()
                 return True
 
 

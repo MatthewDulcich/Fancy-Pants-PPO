@@ -1,0 +1,45 @@
+{
+  "os": "macOS-15.1.1-arm64-arm-64bit",
+  "python": "CPython 3.11.10",
+  "startedAt": "2024-12-10T02:48:30.575232Z",
+  "program": "/Users/matthewdulcich/Documents/DevProjects/Reinforcement Learning Projects/Fancy-Pants-PPO/train.py",
+  "codePath": "train.py",
+  "git": {
+    "remote": "https://github.com/MatthewDulcich/Fancy-Pants-PPO.git",
+    "commit": "440a17758b3c445acb3084791ca332abbf37373d"
+  },
+  "email": "dulcichm@andrews.edu",
+  "root": "/Users/matthewdulcich/Documents/DevProjects/Reinforcement Learning Projects/Fancy-Pants-PPO",
+  "host": "Matthews-MacBook-Pro-7.local",
+  "username": "matthewdulcich",
+  "executable": "/Users/matthewdulcich/miniforge3/envs/rl_env/bin/python",
+  "codePathLocal": "train.py",
+  "cpu_count": 10,
+  "cpu_count_logical": 10,
+  "disk": {
+    "/": {
+      "total": "494384795648",
+      "used": "345341161472"
+    },
+    "/System/Volumes/Data": {
+      "total": "494384795648",
+      "used": "345341161472"
+    }
+  },
+  "memory": {
+    "total": "17179869184"
+  },
+  "cpu": {
+    "count": 10,
+    "countLogical": 10
+  },
+  "apple": {
+    "name": "Apple M1 Pro",
+    "ecpuCores": 2,
+    "pcpuCores": 8,
+    "gpuCores": 14,
+    "memoryGb": 16,
+    "swapTotalBytes": "6442450944",
+    "ramTotalBytes": "17179869184"
+  }
+}

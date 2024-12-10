@@ -39,6 +39,10 @@ def enter_game(window, pre_loaded=False):
     adjusted_button_region = adjust_for_menu_bar(safari_window, play_again_button_region)
     print("Adjusted Button Region:", adjusted_button_region)
 
+    # Initial click to focus the game window
+    pyautogui.moveTo(window_left + 300, window_top + 300, duration=0.1)  # Center of initial area
+    pyautogui.click()
+
     # Step 4: Wait for the "Play Now" text and click
     if wait_for_play_now_text(region=adjusted_button_region, target_text="Play Now"):
         print("Detected 'Play Now'. Clicking the button...")
