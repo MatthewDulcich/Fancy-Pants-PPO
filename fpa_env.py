@@ -128,12 +128,15 @@ class FPAGame(Env):
 
         # REWARD LOGIC
         # Init reward/penalties
-        num_keys_chained = 2
+        num_keys_chained = 3
         num_keys_penalty = 5
-        right_key_reward = 1 # 2
+        right_key_reward = 2
+        up_key_reward = 2
         frame_diff_threshold = 5
+        positive_frame_diff_scaling_factor = 0.5
+        negative_frame_diff_scaling_factor = 0.7 # 0.2
         complete_level_reward = 500
-        wrong_door_penalty = -500
+        wrong_door_penalty = 500
         scale_swirlies_reward = 5 # 10
         repeated_action_penalty = 5 # 5
         opposite_actions_penalty = 3 # 5
@@ -158,13 +161,13 @@ class FPAGame(Env):
         if self.key_states.get('right', False) and self.key_states.get('down', False):
             reward += combo_reward  # Adjust the reward value as needed
 
-        # Reward for left and down combo
-        if self.key_states.get('left', False) and self.key_states.get('down', False):
-            reward += combo_reward  # Adjust the reward value as needed
+        # # Reward for left and down combo
+        # if self.key_states.get('left', False) and self.key_states.get('down', False):
+        #     reward += combo_reward  # Adjust the reward value as needed
 
-        # Reward for left and s combo
-        if self.key_states.get('left', False) and self.key_states.get('s', False):
-            reward += combo_reward  # Adjust the reward value as needed
+        # # Reward for left and s combo
+        # if self.key_states.get('left', False) and self.key_states.get('s', False):
+        #     reward += combo_reward  # Adjust the reward value as needed
 
         # Penalty for chaining more than 2 keys at once
         if sum(self.key_states.values()) > num_keys_chained:
@@ -174,12 +177,16 @@ class FPAGame(Env):
         if action == 1:  # 'right' action
             reward += right_key_reward  # Slightly higher reward to encourage progression
 
+        # Reward for hitting the right key
+        if action == 4:  # 'right' action
+            reward += up_key_reward  # Slightly higher reward to encourage progression
+
         # Frame difference reward
         frame_diff_threshold = 5
         if frame_diff > frame_diff_threshold:
-            reward += (frame_diff - frame_diff_threshold) * 0.5  # Scaled reward
+            reward += (frame_diff - frame_diff_threshold) * positive_frame_diff_scaling_factor  # Scaled reward
         else:
-            reward -= (frame_diff_threshold - frame_diff) * 0.2  # Gradual penalty
+            reward -= (frame_diff_threshold - frame_diff) * negative_frame_diff_scaling_factor  # Gradual penalty
 
         # Reward for completing the level
         if self.check_for_black_screen():
