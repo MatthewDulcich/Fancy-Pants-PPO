@@ -3,6 +3,10 @@ import time
 from window_management import get_most_recent_window_by_owner
 from safari_operations import get_safari_window_coordinates, adjust_for_menu_bar
 from pytesseract_interaction import wait_for_play_now_text, click_center_of_region, get_tab_bar_region, handle_reload_bar
+import config_handler
+
+# Load configuration
+config = config_handler.load_config("game_config.json")
 
 # --- Game Automation Functions ---
 
@@ -27,7 +31,10 @@ def enter_game(window, pre_loaded=False):
         return
     
     # Add offset which sometimes triggers
-    tab_offset = 25
+    if config.get('tabs_present', False):
+        tab_offset = 25
+    else:
+        tab_offset = 0
 
     # Page reload check (inserted between Step 2 and Step 3)
     tab_bar_region = get_tab_bar_region(safari_window, offset = tab_offset)

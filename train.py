@@ -14,7 +14,7 @@ import enter_game
 import safari_operations
 from ppo_model import PPO
 import torch.optim as optim
-import config_handler as config_handler
+import config_handler
 from logging_config import configure_logging
 import wandb
 
@@ -23,7 +23,6 @@ logging, log_filename = configure_logging()
 
 # Example usage in train.py
 logging.info("Starting training process...")
-
 
 # Load configuration
 config = config_handler.load_config("game_config.json")
@@ -58,10 +57,11 @@ def main():
         server_process = game_env_setup.start_ruffle_host(config['PORT'])
         safari_process = game_env_setup.launch_safari_host(config['GAME_URL'])
         
-        safari_window = enter_game.get_most_recent_window_by_owner("Safari")
-        if not safari_window:
-            raise RuntimeError("No Safari window found. Exiting.")
-        enter_game.enter_game(safari_window, pre_loaded=True)
+        # Enter the game
+        # safari_window = enter_game.get_most_recent_window_by_owner("Safari")
+        # if not safari_window:
+        #     raise RuntimeError("No Safari window found. Exiting.")
+        # enter_game.enter_game(safari_window, pre_loaded=True)
 
         canvas_info = {'top': 0, 'left': 0, 'width': 550, 'height': 400}
         if not canvas_info:
