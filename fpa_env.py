@@ -129,13 +129,14 @@ class FPAGame(Env):
         # Init reward/penalties
         num_keys_chained = 2
         num_keys_penalty = 5
-        right_key_reward = 0 # 2
+        right_key_reward = 1 # 2
         frame_diff_threshold = 5
         complete_level_reward = 500
         wrong_door_penalty = -500
-        scale_swirlies_reward = 0 # 10
-        repeated_action_penalty = 0 # 5
+        scale_swirlies_reward = 5 # 10
+        repeated_action_penalty = 5 # 5
         opposite_actions_penalty = 3 # 5
+        combo_reward = 5
         
         # Initialize reward
         reward = 0
@@ -147,6 +148,22 @@ class FPAGame(Env):
         # Penalty for pressing right and left at the same time
         if self.key_states.get('right', False) and self.key_states.get('left', False):
             reward -= opposite_actions_penalty  # Apply a penalty for conflicting horizontal actions
+
+        # Reward for right and up combo
+        if self.key_states.get('right', False) and self.key_states.get('s', False):
+            reward += combo_reward  # Adjust the reward value as needed
+
+        # Reward for right and down combo
+        if self.key_states.get('right', False) and self.key_states.get('down', False):
+            reward += combo_reward  # Adjust the reward value as needed
+
+        # Reward for left and down combo
+        if self.key_states.get('left', False) and self.key_states.get('down', False):
+            reward += combo_reward  # Adjust the reward value as needed
+
+        # Reward for left and s combo
+        if self.key_states.get('left', False) and self.key_states.get('s', False):
+            reward += combo_reward  # Adjust the reward value as needed
 
         # Penalty for chaining more than 2 keys at once
         if sum(self.key_states.values()) > num_keys_chained:
@@ -373,7 +390,8 @@ class FPAGame(Env):
 
             if max_val >= threshold and idx not in self.checkpoint_rewards:
                 self.checkpoint_rewards.add(idx)
-                print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
+                if print_and_save:
+                    print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
                 return idx, max_val, max_loc
             return None
 
