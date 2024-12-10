@@ -185,3 +185,4 @@ video demos/
 plots/*
 secret_key.txt
 wandb/
+wandb/latest-run/
