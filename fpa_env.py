@@ -19,6 +19,7 @@ import config_handler as config_handler
 from logging_config import configure_logging
 from safari_operations import get_safari_window_coordinates
 from pytesseract_interaction import get_tab_bar_region, handle_reload_bar
+import wandb
 
 
 
@@ -234,6 +235,20 @@ class FPAGame(Env):
             "last 10 rewards": list(self.rewards_list)[-10:],
             "cumulative reward": sum(self.rewards_list)
         }
+
+        # Log relevant information with wandb
+        wandb.log({
+            "action": action,
+            "swirlies_detected": len(current_swirlies),
+            "swirlies_collected": collected_swirlies,
+            "swirlies_reward": swirlie_reward,
+            "checkpoint_id": checkpoint_id,
+            "checkpoint_reward": checkpoint_reward,
+            "frame_difference": frame_diff,
+            "episode_reward": reward,
+            "total_reward": self.total_reward,
+            "cumulative_reward": sum(self.rewards_list)
+        })
 
         return new_observation, reward, done, info
 
