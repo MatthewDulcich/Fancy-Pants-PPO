@@ -80,7 +80,7 @@ class FPAGame(Env):
     def step(self, action):
 
         # Check if the tab bar is present
-        if self.tab_bar_check(offset=25):
+        if self.tab_bar_check():
             done = True
 
         # action map
@@ -423,15 +423,19 @@ class FPAGame(Env):
 
         return checkpoint_reward, checkpoint_id
     
-    def tab_bar_check(self, offset=25):
+    def tab_bar_check(self):
+            # Add offset which sometimes triggers
+            if config.get('tabs_present', False):
+                tab_offset = 25
+            else:
+                tab_offset = 0
             safari_window = get_safari_window_coordinates()
 
-            tab_bar_region = get_tab_bar_region(safari_window, offset = offset)
+            tab_bar_region = get_tab_bar_region(safari_window, offset=tab_offset)
             if handle_reload_bar(tab_bar_region):
                 print("Handled reload bar. Proceeding to click play again")
                 self.reset()
                 return True
-
 
     def cleanup_resources(self, server_process, safari_process):
         """
