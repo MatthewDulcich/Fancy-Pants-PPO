@@ -46,7 +46,7 @@ class FPAGame(Env):
         self.template = cv2.imread("images/image_templates/swirly.png")  # Load the swirly template
 
         # Add the correct template in grayscale
-        self.door_template = cv2.imread("images/image_templates/fpa_enter_game_template.png", cv2.IMREAD_GRAYSCALE)
+        self.door_template = cv2.imread("images/image_templates/fpa_exit_game_template.png", cv2.IMREAD_GRAYSCALE)
 
         # Store recent full-res grayscale observations
         self.recent_full_res_observations = deque(maxlen=5)  # Store the last 5 observations
@@ -56,7 +56,7 @@ class FPAGame(Env):
         self.sct = mss.mss()  # Create a persistent mss context for faster screen grabs
         self.repeat_action_window = 10  # Window size for checking repeated actions
         self.recent_actions = deque(maxlen=10)  # Track recent actions
-        # self.i = 0  # Initialize counter for debugging
+        self.i = 0  # Initialize counter for debugging
 
         # Load checkpoint images
         self.checkpoints = []
@@ -103,7 +103,7 @@ class FPAGame(Env):
         # Capture observation after action
         new_obs, original_scale_gray_obs = self.get_observation()
 
-        # save the original scale frame .png
+        # # save the original scale frame .png
         # cv2.imwrite(f"original_scale_gray_obs_{self.i}.png", original_scale_gray_obs)
         # self.i += 1
 
@@ -191,18 +191,17 @@ class FPAGame(Env):
 
         # Reward for completing the level
         if self.check_for_black_screen(original_scale_gray_obs):
+            done = True
             logging.info("Black screen detected. Checking which door agent entered...")
             print("Black screen detected. Checking which door agent entered...")
-            if self.entered_wrong_door(self.recent_full_res_observations):
-                logging.info("Fail! Restarting tutorial level. Reward earned: -500")
-                print("Fail! Restarting tutorial level. Reward earned: -500")
-                reward -= wrong_door_penalty  # Reduced penalty for exploration
-                done = True
+            if self.entered_correct_door(self.recent_full_res_observations):
+                logging.info("Finished tutorial level!!! Reward earned: 500")
+                print("Finished tutorial level!!! Reward earned: 500")
+                reward += wrong_door_penalty  # Reduced penalty for exploration
             else:
-                reward += complete_level_reward  # Normalized reward for completion
-                logging.info("Level completed successfully!!! Reward: 500")
-                print("Level completed successfully!!! Reward: 500")
-                done = True
+                logging.info("Wrong door entered. Penalty applied: -500")
+                print("Wrong door entered. Penalty applied: -500")
+                reward -= wrong_door_penalty
         else:
             done = False
 
@@ -260,10 +259,9 @@ class FPAGame(Env):
 
         return new_obs, reward, done, info
 
-    def entered_wrong_door(self, recent_observations):
+    def entered_correct_door(self, recent_observations):
         """
-        Check if the agent entered the wrong door by comparing recent observations
-        with the door template.
+        Check if the agent entered the correct door by comparing the template with the recent observations.
         """
         print("Checking for wrong door entry...")
         for observation in recent_observations:
@@ -272,11 +270,11 @@ class FPAGame(Env):
             _, max_val, _, _ = cv2.minMaxLoc(result)
 
             # Define a similarity threshold (adjust as needed)
-            similarity_threshold = 0.6
-            logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
-            print(f"Wrong door detected with similarity {max_val:.2f}.")
+            similarity_threshold = 0.9
+            logging.info(f"Correct door detected with similarity {max_val:.2f}.")
+            print(f"Correct door detected with similarity {max_val:.2f}.")
             if max_val >= similarity_threshold:
-                print("Wrong door detected.")
+                print("Correct door detected.")
                 return True
 
         return False

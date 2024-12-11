@@ -60,7 +60,7 @@ def main():
         #     raise RuntimeError("No Safari window found. Exiting.")
         # enter_game.enter_game(safari_window, pre_loaded=True)
 
-        canvas_info = {'top': 0, 'left': 0, 'width': 550, 'height': 400}
+        canvas_info = {'top': 0, 'left': 0, 'width': 548, 'height': 365}
         if not canvas_info:
             logging.error("Failed to fetch canvas info. Exiting.")
             raise ValueError("Failed to fetch canvas info. Exiting.")
@@ -70,7 +70,7 @@ def main():
         if not safari_coords:
             raise RuntimeError("Failed to fetch Safari window coordinates. Exiting.")
         adjusted_game_location = {
-            'top': canvas_info['top'] + safari_coords['top'] + 60,
+            'top': canvas_info['top'] + safari_coords['top'] + 70,
             'left': canvas_info['left'] + safari_coords['left'],
             'width': canvas_info['width'],
             'height': canvas_info['height'],
