@@ -123,10 +123,11 @@ def main():
             
             
             # Collect rollouts
-            states, actions, rewards, log_probs, values, dones = ppo.collect_rollouts(env, n_steps=config['rollout_steps'])
-            
-            # Update policy and track loss
-            
+            states, actions, rewards, log_probs, values, dones, i = ppo.collect_rollouts(env, n_steps=config['rollout_steps'])
+
+            if dones[-1]:
+                logging.info(f"Episode ended at step {i + 1}. Updating policy and collecting new rollouts.")
+                        
             # Update policy and track loss
             ppo_loss = ppo.update_policy(
                 states=states,

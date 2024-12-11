@@ -86,7 +86,7 @@ class FPAGame(Env):
 
         # action map
         action_map = {
-            0: 'left',         # press: Left
+            0: 'left' ,         # press: Left
             1: 'right',        # press: Right
             2: 's',            # press: Jump
             3: 'down',         # press: Duck
@@ -100,31 +100,27 @@ class FPAGame(Env):
         # if key != 'no_action':
         self.key_toggle(key)
 
-        # Capture observation after action using `get_observation`
-        new_observation, original_scale_frame = self.get_observation()
+        # Capture observation after action
+        new_obs, original_scale_gray_obs = self.get_observation()
 
         # save the original scale frame .png
-        # cv2.imwrite(f"original_scale_frame_{self.i}.png", original_scale_frame)
+        # cv2.imwrite(f"original_scale_gray_obs_{self.i}.png", original_scale_gray_obs)
         # self.i += 1
 
         # Store the original scale frame in the deque
-        self.recent_full_res_observations.append(original_scale_frame)
-
-        # Ensure prev_observation is initialized
-        if self.prev_observation is None:
-            self.prev_observation = new_observation
+        self.recent_full_res_observations.append(original_scale_gray_obs)
 
         # Detect swirlies
         _, current_swirlies, collected_swirlies = track_swirlies(
-            original_scale_frame, self.template, self.prev_swirlies
+            original_scale_gray_obs, self.template, self.prev_swirlies
         )
         self.prev_swirlies = current_swirlies
 
         # Calculate frame difference
-        frame_diff = round(np.mean(np.abs(self.prev_observation - new_observation)))
+        frame_diff = round(np.mean(np.abs(self.prev_observation - new_obs)))
 
         # Update previous observation
-        self.prev_observation = new_observation
+        self.prev_observation = new_obs
 
         # REWARD LOGIC
         # Init reward/penalties
@@ -189,9 +185,10 @@ class FPAGame(Env):
             reward -= (frame_diff_threshold - frame_diff) * negative_frame_diff_scaling_factor  # Gradual penalty
 
         # Reward for completing the level
-        if self.check_for_black_screen():
+        if self.check_for_black_screen(original_scale_gray_obs):
             logging.info("Black screen detected. Checking which door agent entered...")
-            if self.entered_wrong_door():
+            wandb.log("Black screen detected! Checking which door agent entered...")
+            if self.entered_wrong_door(self.recent_full_res_observations):
                 logging.info("Entered the wrong door. Level failed. Reward: -500")
                 reward -= wrong_door_penalty  # Reduced penalty for exploration
                 done = True
@@ -207,7 +204,7 @@ class FPAGame(Env):
         reward += swirlie_reward
 
         # Reward for reaching a checkpoint
-        checkpoint_reward, checkpoint_id = self.checkpoint_matching(original_scale_frame)
+        checkpoint_reward, checkpoint_id = self.checkpoint_matching(original_scale_gray_obs)
         reward += checkpoint_reward
         if checkpoint_reward != 0:
             print(f"Checkpoint reward: {checkpoint_reward}")
@@ -257,14 +254,14 @@ class FPAGame(Env):
             "cumulative_reward": sum(self.rewards_list)
         })
 
-        return new_observation, reward, done, info
+        return new_obs, reward, done, info
 
-    def entered_wrong_door(self):
+    def entered_wrong_door(self, recent_observations):
         """
         Check if the agent entered the wrong door by comparing recent observations
         with the door template.
         """
-        for observation in self.recent_full_res_observations:
+        for observation in recent_observations:
             # Match template using OpenCV
             result = cv2.matchTemplate(observation, self.door_template, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, _ = cv2.minMaxLoc(result)
@@ -372,14 +369,11 @@ class FPAGame(Env):
 
         return downscaled_frame, grayscale_frame
     
-    def check_for_black_screen(self):
+    def check_for_black_screen(self, obs):
         """
         Check if the screen is black (entered a door, game over, change level, etc.)
         """
-        # Directly capture observation
-        downscaled_obs, grayscale_obs = self.get_observation()
-
-        avg_intensity = downscaled_obs.mean()  # More efficient than np.mean(observation)
+        avg_intensity = obs.mean()
 
         # Optimize threshold comparison
         is_black_screen = avg_intensity < 20  # Fine-tune threshold as needed
