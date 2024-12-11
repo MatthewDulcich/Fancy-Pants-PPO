@@ -231,8 +231,8 @@ class FPAGame(Env):
         # Reward for reaching a checkpoint
         checkpoint_reward, checkpoint_id = self.checkpoint_matching(original_scale_gray_obs)
         reward += checkpoint_reward
-        if checkpoint_reward != 0:
-            print(f"Checkpoint reward: {checkpoint_reward}")
+        # if checkpoint_reward != 0:
+        #     print(f"Checkpoint reward: {checkpoint_reward}")
 
         # Penalty for repeated actions
         if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
@@ -431,8 +431,7 @@ class FPAGame(Env):
 
             if max_val >= threshold and idx not in self.checkpoint_rewards:
                 self.checkpoint_rewards.add(idx)
-                if print_and_save:
-                    print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
+                print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
                 return idx, max_val, max_loc
             return None
 
@@ -446,7 +445,7 @@ class FPAGame(Env):
                     checkpoint_reward += 100  # Adjust the reward value as needed
                     checkpoint_id = idx + 1
                     if print_and_save:
-                        print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}")
+                        print(f"Checkpoint {idx + 1} reached with score {max_val:.2f} reward 100")
 
                         # Save observations with matching checkpoints drawn
                         annotated_dir = "images/game_checkpoint_images/annotated_checkpoint_images"
