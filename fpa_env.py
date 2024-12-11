@@ -124,10 +124,11 @@ class FPAGame(Env):
 
         # REWARD LOGIC
         # Init reward/penalties
-        num_keys_chained = 0  # 2
-        num_keys_penalty = 0  # 5
-        right_key_reward = 0  # 2
+        num_keys_chained = 2  # 2
+        num_keys_penalty = 1  # 5
+        right_key_reward = 2  # 2
         up_key_reward = 0  # 2
+        jump_key_reward = 2  # 2
         frame_diff_threshold = 0  # 5
         positive_frame_diff_scaling_factor = 0  # 0.5
         negative_frame_diff_scaling_factor = 0  # 0.7
@@ -175,9 +176,9 @@ class FPAGame(Env):
         
         # Reward for hitting the jump key
         if action == 2:  # 's' action
-            reward += 10  # Adjust the reward value as needed
+            reward += jump_key_reward  
 
-        # Reward for hitting the right key
+        # Reward for hitting the up key
         if action == 4:  # 'right' action
             reward += up_key_reward  # Slightly higher reward to encourage progression
 
@@ -216,7 +217,7 @@ class FPAGame(Env):
             print(f"Checkpoint reward: {checkpoint_reward}")
 
         # Penalty for repeated actions
-        if len(self.recent_actions) == self.repeat_actiossssn_window and all(a == action for a in self.recent_actions):
+        if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
             reward -= repeated_action_penalty  # Reduced penalty to prevent harsh discouragement
 
         # Update rewards
