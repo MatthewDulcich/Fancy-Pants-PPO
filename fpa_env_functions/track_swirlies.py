@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False):
+def track_swirlies(observation, swirlies_template, prev_swirlies, print_to_terminal=False):
     """
     Tracks swirlies in the given observation using template matching.
     
@@ -24,12 +24,12 @@ def track_swirlies(observation, template, prev_swirlies, print_to_terminal=False
     # gray_observation = cv2.cvtColor(observation, cv2.COLOR_BGR2GRAY)
     # print(gray_observation.shape)
     # Convert the template to grayscale
-    gray_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+    # gray_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
     # print(gray_observation.shape)
     
     # observation needs to be ~400, 550
     # Perform template matching
-    result = cv2.matchTemplate(observation, gray_template, cv2.TM_CCOEFF_NORMED)
+    result = cv2.matchTemplate(observation, swirlies_template, cv2.TM_CCOEFF_NORMED)
     
     # Define a threshold for detecting the swirly
     threshold = 0.8
