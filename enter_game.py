@@ -44,7 +44,7 @@ def enter_game(window, pre_loaded=False):
     # Step 3: Define button region and adjust for Safari window position
     play_again_button_region = {"left": 200, "top": 300 + tab_offset, "width": 140, "height": 40}  # Relative coordinates (x, y, width, height) NOTE: I changed this to 325 from 300
     adjusted_button_region = adjust_for_menu_bar(safari_window, play_again_button_region)
-    print("Adjusted Button Region:", adjusted_button_region)
+    # print("Adjusted Button Region:", adjusted_button_region)
 
     # Initial click to focus the game window
     pyautogui.moveTo(window_left + 300, window_top + 300, duration=0.1)  # Center of initial area
@@ -93,7 +93,7 @@ def enter_game(window, pre_loaded=False):
         pyautogui.keyUp('up')
         time.sleep(5)
 
-    print("Done entering game.")
+    print("Done entering game. Training begins now!")
 
 
 # --- Main Script ---

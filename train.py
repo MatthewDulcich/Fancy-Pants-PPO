@@ -21,9 +21,6 @@ import wandb
 # Configure logging
 logging, log_filename = configure_logging()
 
-# Example usage in train.py
-logging.info("Starting training process...")
-
 # Load configuration
 config = config_handler.load_config("game_config.json")
 
@@ -120,13 +117,12 @@ def main():
             logging.info(100*"=")
             logging.info(100*"=")
             logging.info(f"Starting episode {episode_count}")
-            
+            print(100*"=")
+            print(100*"=")
+            print(f"Starting episode {episode_count}")
             
             # Collect rollouts
             states, actions, rewards, log_probs, values, dones, i = ppo.collect_rollouts(env, n_steps=config['rollout_steps'])
-
-            if dones[-1]:
-                logging.info(f"Episode ended at step {i + 1}. Updating policy and collecting new rollouts.")
                         
             # Update policy and track loss
             ppo_loss = ppo.update_policy(
@@ -157,37 +153,11 @@ def main():
 
             # Log metrics to W&B
             wandb.log({
-                "episode": episode_count,
+                "episode count": episode_count,
                 "episode_reward": episode_reward,
                 "episode_length": episode_length,
                 "ppo_loss": ppo_loss
             })
-            
-            # QUESTION: Duplicate code?
-            # # Save metrics periodically
-            
-            # # Calculate episode-level metrics
-            # episode_reward = rewards.sum().item()
-            # episode_length = len(rewards)
-            
-            # # Update metrics dictionary
-            # metrics["episode_rewards"].append(episode_reward)
-            # metrics["episode_lengths"].append(episode_length)
-
-            
-            # # Logging metrics
-            # logging.info(f"Episode {episode_count}")
-            # logging.info(f"Reward: {episode_reward:.2f}")
-            # logging.info(f"Length: {episode_length}")
-            # logging.info(f"PPO Loss: {ppo_loss:.4f}")
-
-            # # Log metrics to W&B
-            # wandb.log({
-            #     "episode": episode_count,
-            #     "episode_reward": episode_reward,
-            #     "episode_length": episode_length,
-            #     "ppo_loss": ppo_loss
-            # })
             
             # Save metrics periodically
             if episode_count % 10 == 0:
@@ -207,25 +177,35 @@ def main():
         traceback.print_exc()
 
     finally:
-        if env:
+        try:
+            logging.info("Starting cleanup...")
             env.cleanup_resources(server_process, safari_process)
-        elif server_process and safari_process:
-            game_env_setup.cleanup(server_process, safari_process)
-        logging.info("All processes terminated successfully. Exiting.")
-        wandb.finish()
+            logging.info("All processes terminated successfully.")
+        except Exception as cleanup_error:
+            logging.error(f"An error occurred during cleanup: {cleanup_error}", exc_info=True)
+        finally:
+            wandb.finish()
+            logging.info("W&B session ended.")
 
 if __name__ == "__main__":
     env = None
     server_process = None
     safari_process = None
+
     try:
-        env, server_process, safari_process = main()
+        main()
     except KeyboardInterrupt:
-        print("\nExecution interrupted by user. Cleaning up resources...")
         logging.info("Execution interrupted by user. Cleaning up resources...")
+        print("\nExecution interrupted by user. Cleaning up resources...")
+    except Exception as e:
+        logging.exception(f"An unexpected error occurred: {e}")
     finally:
-        if env:
+        try:
+            # Ensure cleanup of resources
             env.cleanup_resources(server_process, safari_process)
-        elif server_process and safari_process:
-            game_env_setup.cleanup(server_process, safari_process)
-        logging.info("All processes terminated successfully. Exiting.")
+            logging.info("All processes terminated successfully. Exiting.")
+        except Exception as cleanup_error:
+            logging.error(f"An error occurred during final cleanup: {cleanup_error}", exc_info=True)
+        finally:
+            wandb.finish()
+            logging.info("W&B session ended.")

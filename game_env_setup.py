@@ -14,7 +14,6 @@ def start_ruffle_host(port=8000):
     """
     Starts the HTTP server for hosting the Ruffle game and returns the process.
     """
-    print("Starting the Ruffle host server...")
     server_process = subprocess.Popen(
         ["python", "-m", "http.server", str(port)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -27,7 +26,6 @@ def launch_safari_host(game_url):
     """
     Launches the Safari browser with the specified game URL.
     """
-    print("Launching Safari browser...")
     safari_process = subprocess.Popen(["open", "-a", "Safari", game_url], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     time.sleep(5)
     print("Safari browser launched.")
@@ -78,10 +76,6 @@ def capture_observation(canvas_info, content_offset):
         canvas_pixels = np.array(screenshot)
         print("Screenshot captured: shape =", canvas_pixels.shape)
         return canvas_pixels
-
-def reset_episode(env, reward_sum, episode_rewards, episode_count):
-    obs = env.reset()
-    return obs, 0, [], episode_count + 1, time.time()
 
 def cleanup(server_process, safari_process):
     """

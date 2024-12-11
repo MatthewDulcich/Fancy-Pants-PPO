@@ -130,7 +130,7 @@ class FPAGame(Env):
         frame_diff_threshold = 5
         complete_level_reward = 500
         wrong_door_penalty = -500
-        scale_swirlies_reward = 5 # 10
+        scale_swirlies_reward = 10
         repeated_action_penalty = 5 # 5
         opposite_actions_penalty = 3 # 5
         combo_reward = 5
@@ -180,14 +180,16 @@ class FPAGame(Env):
         # Reward for completing the level
         if self.check_for_black_screen(original_scale_gray_obs):
             logging.info("Black screen detected. Checking which door agent entered...")
-            wandb.log("Black screen detected! Checking which door agent entered...")
+            print("Black screen detected. Checking which door agent entered...")
             if self.entered_wrong_door(self.recent_full_res_observations):
-                logging.info("Entered the wrong door. Level failed. Reward: -500")
+                logging.info("Fail! Restarting tutorial level. Reward earned: -500")
+                print("Fail! Restarting tutorial level. Reward earned: -500")
                 reward -= wrong_door_penalty  # Reduced penalty for exploration
                 done = True
             else:
                 reward += complete_level_reward  # Normalized reward for completion
                 logging.info("Level completed successfully!!! Reward: 500")
+                print("Level completed successfully!!! Reward: 500")
                 done = True
         else:
             done = False
@@ -229,7 +231,7 @@ class FPAGame(Env):
             "done": done,
             "episode reward": reward,
             "total reward": self.total_reward,
-            "last 10 rewards": list(self.rewards_list)[-10:],
+            "last 10 rewards": list(self.rewards_list),
             "cumulative reward": sum(self.rewards_list)
         }
 
@@ -241,10 +243,7 @@ class FPAGame(Env):
             "swirlies_reward": swirlie_reward,
             "checkpoint_id": checkpoint_id,
             "checkpoint_reward": checkpoint_reward,
-            "frame_difference": frame_diff,
-            "episode_reward": reward,
-            "total_reward": self.total_reward,
-            "cumulative_reward": sum(self.rewards_list)
+            "frame_difference": frame_diff
         })
 
         return new_obs, reward, done, info
@@ -254,15 +253,18 @@ class FPAGame(Env):
         Check if the agent entered the wrong door by comparing recent observations
         with the door template.
         """
+        print("Checking for wrong door entry...")
         for observation in recent_observations:
             # Match template using OpenCV
             result = cv2.matchTemplate(observation, self.door_template, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, _ = cv2.minMaxLoc(result)
 
             # Define a similarity threshold (adjust as needed)
-            similarity_threshold = 0.45
+            similarity_threshold = 0.6
             logging.info(f"Wrong door detected with similarity {max_val:.2f}.")
+            print(f"Wrong door detected with similarity {max_val:.2f}.")
             if max_val >= similarity_threshold:
+                print("Wrong door detected.")
                 return True
 
         return False
@@ -271,6 +273,7 @@ class FPAGame(Env):
         """
         Reset the environment by restarting the Ruffle server and Safari process.
         """
+        print("Resetting environment...")
         try:
 
             # Reset total reward and rewards list
@@ -443,37 +446,33 @@ class FPAGame(Env):
             tab_bar_region = get_tab_bar_region(safari_window, offset=tab_offset)
             if handle_reload_bar(tab_bar_region):
                 print("Handled reload bar. Proceeding to click play again")
-                self.reset()
+                # self.reset()
                 return True
+
+    def terminate_process(self, process, name):
+        """
+        Helper function to safely terminate a process.
+        """
+        if process:
+            if process.poll() is None:  # Check if process is still running
+                try:
+                    process.terminate()
+                    process.wait(timeout=2)  # Add a timeout to avoid indefinite waiting
+                    logging.info(f"{name} process terminated successfully.")
+                except Exception as e:
+                    logging.warning(f"Failed to terminate {name} process gracefully: {e}")
+                    process.kill()  # Force terminate if graceful termination fails
+                    logging.info(f"{name} process killed.")
+            else:
+                logging.info(f"{name} process already terminated.")
+        else:
+            logging.info(f"No {name} process to terminate.")
 
     def cleanup_resources(self, server_process, safari_process):
         """
-        Clean up resources by terminating server and Safari processes.
+        Cleans up resources by terminating the server and Safari processes.
         """
-        def terminate_process(process, name):
-            """
-            Helper function to safely terminate a process.
-            """
-            if process:
-                if process.poll() is None:  # Check if process is still running
-                    try:
-                        process.terminate()
-                        process.wait(timeout=5)  # Add a timeout to avoid indefinite waiting
-                        logging.info(f"{name} process terminated successfully.")
-                    except Exception as e:
-                        logging.warning(f"Failed to terminate {name} process gracefully: {e}")
-                        process.kill()  # Force terminate if graceful termination fails
-                        logging.info(f"{name} process killed.")
-                else:
-                    logging.info(f"{name} process already terminated.")
-            else:
-                logging.info(f"No {name} process to terminate.")
-
-        try:
-            logging.info("Starting resource cleanup...")
-            terminate_process(server_process, "Ruffle server")
-            terminate_process(safari_process, "Safari")
-            logging.info("All processes terminated successfully.")
-
-        except Exception as e:
-            logging.error("An error occurred during cleanup:", exc_info=True)
+        logging.info("Starting resource cleanup...")
+        self.terminate_process(server_process, "Ruffle server")
+        self.terminate_process(safari_process, "Safari")
+        logging.info("All processes terminated successfully.")
