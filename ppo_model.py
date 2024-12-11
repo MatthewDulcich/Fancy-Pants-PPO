@@ -42,7 +42,6 @@ class PPOAgent(nn.Module):
         state_value = self.value_head(x)
         return policy_logits, state_value
 
-
 class PPO:
     def __init__(self, input_channels, input_height, input_width, n_actions, lr=1e-4, gamma=0.98, epsilon=0.3, entropy_coef=0.03):
         self.policy = PPOAgent(input_channels, input_height, input_width, n_actions)
@@ -70,6 +69,7 @@ class PPO:
 
             next_state, reward, done, _ = env.step(action.item())
 
+            # Append to buffers
             states.append(state)
             actions.append(action.item())
             rewards.append(reward)
@@ -77,7 +77,13 @@ class PPO:
             values.append(state_value.item())
             dones.append(done)
 
-            state = next_state if not done else env.reset()
+            # If done, break out of the loop to restart
+            if done:
+                logging.info(f"Episode ended at step {i + 1}. Resetting environment.")
+                state = env.reset()
+                break  # End current rollout here
+            else:
+                state = next_state
 
             logging.info(f"Step {i + 1}/{n_steps} | Action: {action.item()} | Reward: {reward} | Done: {done}")
             wandb.log({"Step": i + 1, "Action": action.item(), "Reward": reward})
@@ -89,6 +95,7 @@ class PPO:
             torch.tensor(np.array(log_probs), dtype=torch.float32),
             torch.tensor(np.array(values), dtype=torch.float32),
             torch.tensor(np.array(dones), dtype=torch.float32),
+            i + 1  # Return the number of steps taken
         )
 
     def compute_ppo_loss(self, states, actions, rewards, log_probs, values, dones):
