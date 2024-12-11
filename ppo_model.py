@@ -5,7 +5,6 @@ from torch.distributions import Categorical
 import numpy as np
 from collections import deque
 from logging_config import configure_logging
-import wandb
 
 # Configure logging
 logging, _ = configure_logging()  # Ignore the log filename if not needed here
@@ -76,17 +75,17 @@ class PPO:
             log_probs.append(log_prob.item())
             values.append(state_value.item())
             dones.append(done)
+            print(f"Step {i + 1} | Action: {action.item()} | Reward: {reward} | Done: {done}")
 
             # If done, break out of the loop to restart
             if done:
-                logging.info(f"Episode ended at step {i + 1}. Resetting environment.")
+                print(f"Episode ended at step {i + 1}. Collecting new rollouts.")
+                logging.info(f"Episode ended at step {i + 1}. Collecting new rollouts.")
                 state = env.reset()
                 break  # End current rollout here
             else:
                 state = next_state
 
-            logging.info(f"Step {i + 1}/{n_steps} | Action: {action.item()} | Reward: {reward} | Done: {done}")
-            wandb.log({"Step": i + 1, "Action": action.item(), "Reward": reward})
 
         return (
             torch.tensor(np.array(states), dtype=torch.float32) / 255.0,

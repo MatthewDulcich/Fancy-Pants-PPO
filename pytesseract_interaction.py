@@ -145,14 +145,14 @@ if __name__ == "__main__":
         button_region[2],
         button_region[3]
     )
-    print("Adjusted Button Region:", button_region_adjusted)
+    # print("Adjusted Button Region:", button_region_adjusted)
 
     # Handle reload bar
     tab_bar_region = get_tab_bar_region(safari_window)
     handle_reload_bar(tab_bar_region, print_detected_text=True)
 
     # Wait for the "Play Again" text and click
-    if wait_for_play_now_textbar(region=button_region_adjusted, target_text="Play Again"):
+    if wait_for_play_now_text(region=button_region_adjusted, target_text="Play Again"):
         print("Detected 'Play Again'. Clicking the button...")
         click_center_of_region(button_region_adjusted)
     else:
