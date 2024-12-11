@@ -125,11 +125,11 @@ class FPAGame(Env):
         # REWARD LOGIC
         # Init reward/penalties
         num_keys_chained = 2  # 2
-        num_keys_penalty = 0  # 5
+        num_keys_penalty = 3  # 5
         right_key_reward = 3  # 2
         up_key_reward = 0  # 2
         jump_key_reward = 3  # 2
-        frame_diff_threshold = 0  # 5
+        frame_diff_threshold = 5  # 5
         positive_frame_diff_scaling_factor = 0  # 0.5
         negative_frame_diff_scaling_factor = 0  # 0.7
         complete_level_reward = 500  # 500
@@ -195,7 +195,6 @@ class FPAGame(Env):
             reward += 0.5  # Adjust the reward value as needed
 
         # Frame difference reward
-        frame_diff_threshold = 5
         if frame_diff > frame_diff_threshold:
             reward += (frame_diff - frame_diff_threshold) * positive_frame_diff_scaling_factor  # Scaled reward
         else:
@@ -206,7 +205,7 @@ class FPAGame(Env):
         if frame_diff > frame_diff_threshold:
             reward += 0  # Scaled reward
         else:
-            reward -= 15  # Gradual penalty
+            reward -= 0  # Gradual penalty
 
         # Reward for completing the level
         if self.check_for_black_screen(original_scale_gray_obs):

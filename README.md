@@ -44,10 +44,12 @@ We implemented our algorithm on [FPA: World 3.](https://www.bornegames.com/games
   ```
 
 ### Step 4: Add Fancy Pants .swf Files
-- Place your legally obtained "The Fancy Pants Adventures: World 3" `.swf` file in the `Fancy-Pants-PPO` directory. It should be renamed to 'fpaworld3.swf'. The structure should look like this:
+- Place your legally obtained "The Fancy Pants Adventures: World 3" `.swf` file in the `Fancy-Pants-PPO` directory. It should be renamed to `fpaworld3.swf`. The structure should look like this:
   ```
-  fpaworld3.swf
+  FANCY-PANTS-PPO
+    |- fpaworld3.swf
   ```
+- Enter the game using the `python main.py` and enter the main level and then you can `ctrl-c` the file (you should go outside the house)
 
 ### Step 5: Additional Setup
 1. **Privacy & Accessibility Settings**
@@ -59,8 +61,29 @@ We implemented our algorithm on [FPA: World 3.](https://www.bornegames.com/games
      - Navigate to **System Settings > Displays > Advanced...**
      - Select **Show resolutions as list**
      - Enable **Show all resolutions** and choose **1920x1200**
+4. **Setup Wandb**
+   - Go to `wandb.ai` and locate your api key and organization name
+   - Put it in a file named `secret_key.txt`, format it so it is seperated by a comma and no spaces like this:
+   ```
+   <organization name>,<wandb api key>
+   ```
+5. **Close All Tabs or add Offset**
+   - Close all tabs and the safari browser fully
+   or
+   - Change the `tabs_present` in `game_config.json` to `1` instead of `0`
 
 ### Step 6: Run train.py
 ```
 python train.py
 ```
+
+### Notes
+- turn on and off wandb by running the following commands
+```
+wandb enabled
+```
+```
+wandb disabled
+```
+- You might need to adjust the threshold values for the template matching if the threshold value is too low
+  - Press `cmd+shift+f` and search `similarity_threshold` (`1` of these) and `threshold` (`2` of these) there should be of of each in `fpa_env.py` and only one threshold in `track_swirlies.py`
