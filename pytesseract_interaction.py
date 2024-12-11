@@ -94,6 +94,15 @@ def wait_for_play_now_text(region, target_text, timeout=60, check_interval=1, pr
     """
     start_time = time.time()
 
+    # # save the button region as a screenshot image
+    # screenshot = ImageGrab.grab(bbox=(
+    #     region['left'],
+    #     region['top'],
+    #     region['left'] + region['width'],
+    #     region['top'] + region['height']
+    # ))
+    # screenshot.save("images/screenshots/button_region.png")
+
     iteration = 0
     while time.time() - start_time < timeout:
         detected_text = extract_text_from_region(region)

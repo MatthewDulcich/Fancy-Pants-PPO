@@ -42,7 +42,7 @@ def enter_game(window, pre_loaded=False):
         print("Handled reload bar. Proceeding to click play again")
 
     # Step 3: Define button region and adjust for Safari window position
-    play_again_button_region = {"left": 200, "top": 300 + tab_offset, "width": 140, "height": 40}  # Relative coordinates (x, y, width, height) NOTE: I changed this to 325 from 300
+    play_again_button_region = {"left": 205, "top": 300 + tab_offset, "width": 140, "height": 40}  # Relative coordinates (x, y, width, height)
     adjusted_button_region = adjust_for_menu_bar(safari_window, play_again_button_region)
     # print("Adjusted Button Region:", adjusted_button_region)
 
