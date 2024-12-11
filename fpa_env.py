@@ -132,8 +132,8 @@ class FPAGame(Env):
         frame_diff_threshold = 0  # 5
         positive_frame_diff_scaling_factor = 0  # 0.5
         negative_frame_diff_scaling_factor = 0  # 0.7
-        complete_level_reward = 0  # 500
-        wrong_door_penalty = 0  # 500
+        complete_level_reward = 500  # 500
+        wrong_door_penalty = 500  # 500
         scale_swirlies_reward = 0  # 5
         repeated_action_penalty = 0  # 5
         opposite_actions_penalty = 0  # 3
@@ -216,7 +216,7 @@ class FPAGame(Env):
             if self.entered_correct_door(self.recent_full_res_observations):
                 logging.info("Finished tutorial level!!! Reward earned: 500")
                 print("Finished tutorial level!!! Reward earned: 500")
-                reward += wrong_door_penalty  # Reduced penalty for exploration
+                reward += complete_level_reward  # Reduced penalty for exploration
             else:
                 logging.info("Wrong door entered. Penalty applied: -500")
                 print("Wrong door entered. Penalty applied: -500")
