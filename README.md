@@ -78,12 +78,14 @@ python train.py
 ```
 
 ### Notes
-- turn on and off wandb by running the following commands
-```
-wandb enabled
-```
+- If WandB throws errors because of a lack of authentication to log to our project, you can turn it off like this from the terminal:
 ```
 wandb disabled
 ```
+You may turn it back on using this command:
+```
+wandb enabled
+```
+
 - You might need to adjust the threshold values for the template matching if the threshold value is too low
   - Press `cmd+shift+f` and search `similarity_threshold` (`1` of these) and `threshold` (`2` of these) there should be of of each in `fpa_env.py` and only one threshold in `track_swirlies.py`
