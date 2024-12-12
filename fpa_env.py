@@ -270,6 +270,9 @@ class FPAGame(Env):
         threshold = 0.9  # Adjust the threshold as needed
         checkpoint_id = None
 
+        # Define progressive rewards for checkpoints (1 to 12)
+        progressive_rewards = [30, 50, 70, 100, 120, 150, 180, 220, 260, 300, 350, 400]
+
         # Ensure observation is a valid NumPy array
         gray_observation = np.array(observation, dtype=np.uint8)
 
@@ -282,8 +285,9 @@ class FPAGame(Env):
 
             if max_val >= threshold and idx not in self.checkpoint_rewards:
                 self.checkpoint_rewards.add(idx)
-                print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}, reward 100")
-                return idx, max_val, max_loc
+                reward = progressive_rewards[idx]  # Get the progressive reward for this checkpoint
+                print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}, reward {reward}")
+                return idx, max_val, max_loc, reward
             return None
 
         # Use ThreadPoolExecutor for parallel processing
@@ -292,11 +296,11 @@ class FPAGame(Env):
             for future in futures:
                 result = future.result()
                 if result:
-                    idx, max_val, max_loc = result
-                    checkpoint_reward += 100  # Adjust the reward value as needed
+                    idx, max_val, max_loc, reward = result
+                    checkpoint_reward += reward  # Add the progressive reward
                     checkpoint_id = idx + 1
                     if print_and_save:
-                        print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}, reward 100")
+                        print(f"Checkpoint {idx + 1} reached with score {max_val:.2f}, reward {reward}")
 
                         # Save observations with matching checkpoints drawn
                         annotated_dir = "images/game_checkpoint_images/annotated_checkpoint_images"

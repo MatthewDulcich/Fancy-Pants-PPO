@@ -28,7 +28,7 @@ def calculate_rewards(
     done = False
 
     complete_level_reward = 500
-    wrong_door_penalty = -500
+    wrong_door_penalty = -100
     scale_swirlies_reward = 10
 
     # Reward for completing the level (door entry)
