@@ -103,6 +103,8 @@ class FPAGame(Env):
         # Capture observation after action
         new_obs, original_scale_gray_obs = self.get_observation()
 
+        print(original_scale_gray_obs.shape)
+
         # # save the original scale frame .png
         # cv2.imwrite(f"original_scale_gray_obs_{self.i}.png", original_scale_gray_obs)
         # self.i += 1
@@ -361,9 +363,7 @@ class FPAGame(Env):
     
     # Get the game window
     def get_observation(self): 
-        # TODO: Fix bug between the monitor and screenshot grab, depending on size of screen the screenshot is doubled, my
         # 1080p screen is giving the correct size, while our 4k laptops are giving double the size
-        # Potential fix: take a second swirly screenshot for 4k screens and use that as the template
         monitor = {
             "top": self.game_location['top'],
             "left": self.game_location['left'],
