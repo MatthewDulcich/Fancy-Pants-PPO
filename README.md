@@ -62,7 +62,7 @@ We implemented our algorithm on [FPA: World 3.](https://www.bornegames.com/games
      - Select **Show resolutions as list**
      - Enable **Show all resolutions** and choose **1920x1200**
 4. **Setup Wandb**
-   - Go to `wandb.ai` and locate your api key and organization name
+   - Click [here](https://wandb.ai/authorize), log in and copy your WandB API Key
    - Put it in a file named `secret_key.txt`, format it so it is seperated by a comma and no spaces like this:
    ```
    <organization name>,<wandb api key>
