@@ -81,7 +81,6 @@ class PPO:
             if done:
                 print(f"Episode ended at step {i + 1}. Collecting new rollouts.")
                 logging.info(f"Episode ended at step {i + 1}. Collecting new rollouts.")
-                state = env.reset()
                 break  # End current rollout here
             else:
                 state = next_state
