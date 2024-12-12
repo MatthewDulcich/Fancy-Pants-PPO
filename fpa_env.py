@@ -8,6 +8,7 @@ from gymnasium import Env
 from gymnasium.spaces import Box, Discrete
 from collections import deque
 import os
+import wandb
 from concurrent.futures import ThreadPoolExecutor
 
 # Script imports
@@ -19,9 +20,7 @@ import config_handler as config_handler
 from logging_config import configure_logging
 from safari_operations import get_safari_window_coordinates
 from pytesseract_interaction import get_tab_bar_region, handle_reload_bar
-import wandb
-
-
+from reward_logic import calculate_rewards
 
 # Load configuration
 config = config_handler.load_config("game_config.json")
@@ -44,6 +43,8 @@ class FPAGame(Env):
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
         self.prev_swirlies = []  # Initialize prev_swirlies
         self.swirles_template = cv2.imread("images/image_templates/swirly_gray.png", cv2.IMREAD_GRAYSCALE)
+        # action map
+        self.action_map = config['action_map']
 
         # Add the correct template in grayscale
         self.door_template = cv2.imread("images/image_templates/fpa_exit_game_template.png", cv2.IMREAD_GRAYSCALE)
@@ -79,31 +80,12 @@ class FPAGame(Env):
             self.key_states[key] = False
 
     def step(self, action):
-
-        # Check if the tab bar is present
-        if self.tab_bar_check():
-            done = True
-
-        # action map
-        action_map = {
-            0: 'left' ,         # press: Left
-            1: 'right',        # press: Right
-            2: 's',            # press: Jump
-            3: 'down',         # press: Duck
-            4: 'up',           # press: Up
-            5: 'no_action'     # No-op
-        }
-
-        key = action_map[action]
-
         # Perform the action
-        # if key != 'no_action':
+        key = self.action_map[str(action)]
         self.key_toggle(key)
 
         # Capture observation after action
         new_obs, original_scale_gray_obs = self.get_observation()
-
-        print(original_scale_gray_obs.shape)
 
         # # save the original scale frame .png
         # cv2.imwrite(f"original_scale_gray_obs_{self.i}.png", original_scale_gray_obs)
@@ -120,162 +102,32 @@ class FPAGame(Env):
 
         # Calculate frame difference
         frame_diff = round(np.mean(np.abs(self.prev_observation - new_obs)))
+        self.prev_observation = new_obs  # Update previous observation
 
-        # Update previous observation
-        self.prev_observation = new_obs
-
-        # REWARD LOGIC
-        # Init reward/penalties
-        num_keys_chained = 2  # 2
-        num_keys_penalty = 3  # 5
-        right_key_reward = 3  # 2
-        up_key_reward = 0  # 2
-        jump_key_reward = 3  # 2
-        frame_diff_threshold = 5  # 5
-        positive_frame_diff_scaling_factor = 0  # 0.5
-        negative_frame_diff_scaling_factor = 0  # 0.7
-        complete_level_reward = 500  # 500
-        wrong_door_penalty = 500  # 500
-        scale_swirlies_reward = 0  # 5
-        repeated_action_penalty = 0  # 5
-        opposite_actions_penalty = 0  # 3
-        combo_reward = 0  # 5
-        
-        # Initialize reward
-        reward = 0
-
-        # Penalty for pressing up and down at the same time
-        if self.key_states.get('up', False) and self.key_states.get('down', False):
-            reward -= opposite_actions_penalty  # Apply a penalty for conflicting vertical actions
-
-        # Penalty for pressing right and left at the same time
-        if self.key_states.get('right', False) and self.key_states.get('left', False):
-            reward -= opposite_actions_penalty  # Apply a penalty for conflicting horizontal actions
-
-        # Reward for right and up combo
-        if self.key_states.get('right', False) and self.key_states.get('s', False):
-            reward += combo_reward  # Adjust the reward value as needed
-
-        # Reward for right and down combo
-        if self.key_states.get('right', False) and self.key_states.get('down', False):
-            reward += combo_reward  # Adjust the reward value as needed
-
-        # # Reward for left and down combo
-        # if self.key_states.get('left', False) and self.key_states.get('down', False):
-        #     reward += combo_reward  # Adjust the reward value as needed
-
-        # # Reward for left and s combo
-        # if self.key_states.get('left', False) and self.key_states.get('s', False):
-        #     reward += combo_reward  # Adjust the reward value as needed
-
-        # Penalty for chaining more than 2 keys at once
-        if sum(self.key_states.values()) > num_keys_chained:
-            reward -= num_keys_penalty  # Apply a penalty if more than 2 keys are pressed simultaneously
-
-        # Reward for hitting the right key
-        if action == 1:  # 'right' action
-            reward += right_key_reward  # Slightly higher reward to encourage progression
-        
-        # Reward for hitting the jump key
-        if action == 2:  # 's' action
-            reward += jump_key_reward  
-
-        # Reward for hitting the up key
-        if action == 4:  # 'right' action
-            reward += up_key_reward  # Slightly higher reward to encourage progression
-        
-        # Reward for hitting the left key
-        if action == 0:  # 'left' action
-            reward += 1  # Adjust the reward value as needed
-
-        # Reward for hitting the down key
-        if action == 3:  # 'down' action
-            reward += 1  # Adjust the reward value as needed
-
-        # Reward for no action
-        if action == 5:  # 'no_action'
-            reward += 0.5  # Adjust the reward value as needed
-
-        # Frame difference reward
-        if frame_diff > frame_diff_threshold:
-            reward += (frame_diff - frame_diff_threshold) * positive_frame_diff_scaling_factor  # Scaled reward
-        else:
-            reward -= (frame_diff_threshold - frame_diff) * negative_frame_diff_scaling_factor  # Gradual penalty
-
-        # Frame difference reward
-        frame_diff_threshold = 5
-        if frame_diff > frame_diff_threshold:
-            reward += 0  # Scaled reward
-        else:
-            reward -= 0  # Gradual penalty
-
-        # Reward for completing the level
-        if self.check_for_black_screen(original_scale_gray_obs):
-            done = True
-            logging.info("Black screen detected. Checking which door agent entered...")
-            print("Black screen detected. Checking which door agent entered...")
-            if self.entered_correct_door(self.recent_full_res_observations):
-                logging.info("Finished tutorial level!!! Reward earned: 500")
-                print("Finished tutorial level!!! Reward earned: 500")
-                reward += complete_level_reward  # Reduced penalty for exploration
-            else:
-                logging.info("Wrong door entered. Penalty applied: -500")
-                print("Wrong door entered. Penalty applied: -500")
-                reward -= wrong_door_penalty
-        else:
-            done = False
-
-        # Swirlie collection reward
-        swirlie_reward =  scale_swirlies_reward * collected_swirlies  # Scaled reward
-        reward += swirlie_reward
-
-        # Reward for reaching a checkpoint
-        checkpoint_reward, checkpoint_id = self.checkpoint_matching(original_scale_gray_obs)
-        reward += checkpoint_reward
-        # if checkpoint_reward != 0:
-        #     print(f"Checkpoint reward: {checkpoint_reward}")
-
-        # Penalty for repeated actions
-        if len(self.recent_actions) == self.repeat_action_window and all(a == action for a in self.recent_actions):
-            reward -= repeated_action_penalty  # Reduced penalty to prevent harsh discouragement
+        # Calculate reward using the external function
+        reward, done, info = calculate_rewards(
+            original_scale_gray_obs,
+            self.recent_full_res_observations,
+            collected_swirlies,
+            self.checkpoint_matching,
+            self.check_for_black_screen,
+            self.entered_correct_door
+        )
 
         # Update rewards
         self.total_reward += reward
         self.rewards_list.append(reward)
 
-        # Update recent actions
-        self.recent_actions.append(action)
-
-        # Update total reward and rewards list
-        self.total_reward += reward
-        self.rewards_list.append(reward)
-
-        # Store relevant info in info dict
-        info = {
+        info.update({
             "action": action,
-            "swirlies detected": len(current_swirlies),
-            "swirlies collected": collected_swirlies,
-            "swirlies reward": swirlie_reward,
-            "checkpoint id": checkpoint_id,
-            "checkpoint reward": checkpoint_reward,
             "frame difference": frame_diff,
-            "done": done,
             "episode reward": reward,
             "total reward": self.total_reward,
-            "last 10 rewards": list(self.rewards_list),
-            "cumulative reward": sum(self.rewards_list)
-        }
+            "last 10 rewards": list(self.rewards_list)
+        })
 
         # Log relevant information with wandb
-        wandb.log({
-            "action": action,
-            "swirlies_detected": len(current_swirlies),
-            "swirlies_collected": collected_swirlies,
-            "swirlies_reward": swirlie_reward,
-            "checkpoint_id": checkpoint_id,
-            "checkpoint_reward": checkpoint_reward,
-            "frame_difference": frame_diff
-        })
+        wandb.log(info)
 
         return new_obs, reward, done, info
 
