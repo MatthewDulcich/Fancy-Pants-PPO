@@ -15,7 +15,7 @@ We implemented our algorithm on [FPA: World 3.](https://www.bornegames.com/games
 
 ### Step 2: Installing and Activating Dependencies (macOS)
 - Use a Conda environment or Python virtual environment (`venv`)
-- Install dependencies using `requirements.txt` or `shared_env.yml`:
+- Install dependencies using `requirements.txt`:
 1. `requirements.txt`
   ```
   python3.11 -m venv <environment name>
@@ -25,13 +25,6 @@ We implemented our algorithm on [FPA: World 3.](https://www.bornegames.com/games
   ```
   ```
   pip install -r requirements.txt
-  ```
-2. `shared_env.yml`:
-  ```
-  conda env create -f shared_env.yml -n <environment name>
-  ```
-  ```
-  conda activate <environment name>
   ```
 
 ### Step 3: Download Ruffle Files
