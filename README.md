@@ -65,10 +65,22 @@ We implemented our algorithm on [FPA: World 3.](https://www.bornegames.com/games
    or
    - Change the `tabs_present` in `game_config.json` to `1` instead of `0`
 
-### Step 6: Run train.py
+### Step 6: Train the model or Test a model
+- To train the model run:
 ```
 python train.py
 ```
+- If you have previously trained the model and have other saved weights then you can place the file in the `Saved Artifacts` folder and complete the steps below
+- To test a model select one from `Saved Artifacts` folder and replace `<model version>` with the model name in `test.py`
+```
+model_path = os.path.join(models_dir, "<model version>.pt")  # Update as needed
+
+```
+- Then run the command:
+```
+python test.py
+```
+
 
 ### Notes
 - If WandB throws errors because of a lack of authentication to log to our project, you can turn it off like this from the terminal:
