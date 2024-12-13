@@ -80,6 +80,8 @@ class FPAGame(Env):
             self.key_states[key] = False
 
     def step(self, action):
+
+        # Check if the tab bar is present and handle reload bar
         if self.tab_bar_check():
             return self.reset()
 
@@ -113,7 +115,7 @@ class FPAGame(Env):
             original_scale_gray_obs,
             self.recent_full_res_observations,
             # collected_swirlies,
-            frame_diff,
+            # frame_diff,
             self.checkpoint_matching,
             self.check_for_black_screen,
             self.entered_correct_door
@@ -128,7 +130,7 @@ class FPAGame(Env):
             # "frame difference": frame_diff,
             "episode reward": reward,
             "total reward": self.total_reward,
-            "frame difference": frame_diff
+            # "frame difference": frame_diff
         })
 
         # Log relevant information with wandb
