@@ -75,7 +75,7 @@ class PPO:
             log_probs.append(log_prob.item())
             values.append(state_value.item())
             dones.append(done)
-            print(f"Step {i + 1} | Action: {action.item()} | Reward: {reward} | Done: {done} | Frame Difference: {info['frame difference']}")
+            print(f"Step {i + 1} | Action: {action.item()} | Reward: {reward} | Done: {done}") # | Frame Difference: {info['frame difference']}")
 
             # If done, break out of the loop to restart
             if done:

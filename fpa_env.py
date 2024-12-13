@@ -107,15 +107,15 @@ class FPAGame(Env):
         # self.prev_swirlies = current_swirlies
 
         # # Calculate frame difference
-        # frame_diff = round(np.mean(np.abs(self.prev_observation - new_obs)))
+        frame_diff = round(np.mean(np.abs(self.prev_observation - new_obs)))
         # self.prev_observation = new_obs  # Update previous observation
 
         # Calculate reward using the external function
         reward, done, info = calculate_rewards(
             original_scale_gray_obs,
             self.recent_full_res_observations,
-            # collected_swirlies,
-            # frame_diff,
+            collected_swirlies,
+            frame_diff,
             self.checkpoint_matching,
             self.check_for_black_screen,
             self.entered_correct_door
