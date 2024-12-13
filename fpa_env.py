@@ -41,8 +41,8 @@ class FPAGame(Env):
         self.prev_observation = None  # Initialize prev_observation
         self.total_reward = 0  # Initialize total reward
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
-        # self.prev_swirlies = []  # Initialize prev_swirlies
-        # self.swirles_template = cv2.imread("images/image_templates/swirly_gray.png", cv2.IMREAD_GRAYSCALE)
+        self.prev_swirlies = []  # Initialize prev_swirlies
+        self.swirles_template = cv2.imread("images/image_templates/swirly_gray.png", cv2.IMREAD_GRAYSCALE)
         # action map
         self.action_map = config['action_map']
 
@@ -101,11 +101,11 @@ class FPAGame(Env):
         self.recent_full_res_observations.append(original_scale_gray_obs)
 
         # Detect swirlies
-        collected_swirlies = 0
-        # _, current_swirlies, collected_swirlies = track_swirlies(
-        #     original_scale_gray_obs, self.swirles_template, self.prev_swirlies
-        # )
-        # self.prev_swirlies = current_swirlies
+        # collected_swirlies = 0
+        _, current_swirlies, collected_swirlies = track_swirlies(
+            original_scale_gray_obs, self.swirles_template, self.prev_swirlies
+        )
+        self.prev_swirlies = current_swirlies
 
         # # Calculate frame difference
         frame_diff = round(np.mean(np.abs(self.prev_observation - new_obs)))
@@ -130,7 +130,7 @@ class FPAGame(Env):
             "action": action,
             # "frame difference": frame_diff,
             "episode reward": reward,
-            "total reward": self.total_reward
+            "total reward": self.total_reward,
             # "frame difference": frame_diff
         })
 

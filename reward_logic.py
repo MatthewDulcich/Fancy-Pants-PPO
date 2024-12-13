@@ -60,13 +60,13 @@ def calculate_rewards(
     reward += checkpoint_reward
 
     # # Reward for collecting swirlies
-    # swirlie_reward = scale_swirlies_reward * collected_swirlies
-    # reward += swirlie_reward
+    swirlie_reward = scale_swirlies_reward * collected_swirlies
+    reward += swirlie_reward
 
     # Create info dict for logging and debugging
     info = {
-        # "swirlies collected": collected_swirlies,
-        # "swirlie reward": swirlie_reward,
+        "swirlies collected": collected_swirlies,
+        "swirlie reward": swirlie_reward,
         # "swirles detected": collected_swirlies,
         "checkpoint id": checkpoint_id,
         "checkpoint reward": checkpoint_reward,
