@@ -63,7 +63,7 @@ class FPAGame(Env):
         self.checkpoints = []
         self.checkpoint_rewards = set()  # Track rewarded checkpoints
         checkpoint_dir = "images/game_checkpoint_images/game_checkpoints"
-        for i in range(1, 13):
+        for i in range(1, 8):
             checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
             checkpoint_image = cv2.imread(checkpoint_path)
             if checkpoint_image is not None:
@@ -175,7 +175,7 @@ class FPAGame(Env):
             self.checkpoints = []
             self.checkpoint_rewards = set()  # Track rewarded checkpoints
             checkpoint_dir = "images/game_checkpoint_images/game_checkpoints"
-            for i in range(1, 13):
+            for i in range(1, 8):
                 checkpoint_path = os.path.join(checkpoint_dir, f"Checkpoint{i}.png")
                 checkpoint_image = cv2.imread(checkpoint_path)
                 if checkpoint_image is not None:
@@ -278,7 +278,7 @@ class FPAGame(Env):
         checkpoint_id = None
 
         # Define progressive rewards for checkpoints (1 to 12)
-        progressive_rewards = [30, 50, 70, 100, 120, 150, 180, 220, 260, 300, 350, 400]
+        progressive_rewards = [30, 50, 70, 100, 120, 150, 180]
 
         # Ensure observation is a valid NumPy array
         gray_observation = np.array(observation, dtype=np.uint8)
