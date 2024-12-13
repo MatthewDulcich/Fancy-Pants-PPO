@@ -83,7 +83,8 @@ class FPAGame(Env):
 
         # Check if the tab bar is present and handle reload bar
         if self.tab_bar_check():
-            return self.reset()
+            self.reset()
+            return self.prev_observation, 0, False, {}
 
         # Perform the action
         key = self.action_map[str(action)]
@@ -129,7 +130,7 @@ class FPAGame(Env):
             "action": action,
             # "frame difference": frame_diff,
             "episode reward": reward,
-            "total reward": self.total_reward,
+            "total reward": self.total_reward
             # "frame difference": frame_diff
         })
 

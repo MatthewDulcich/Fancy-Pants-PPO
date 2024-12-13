@@ -92,7 +92,7 @@ def enter_game(window, pre_loaded=False):
         pyautogui.keyUp('s')
         pyautogui.keyUp('left')
         pyautogui.keyUp('up')
-        time.sleep(9)
+        time.sleep(10)
         pyautogui.keyDown('right')
         time.sleep(4)
         pyautogui.keyDown('s')
