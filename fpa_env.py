@@ -80,6 +80,9 @@ class FPAGame(Env):
             self.key_states[key] = False
 
     def step(self, action):
+        if self.tab_bar_check():
+            return self.reset()
+
         # Perform the action
         key = self.action_map[str(action)]
         self.key_toggle(key)
@@ -95,14 +98,15 @@ class FPAGame(Env):
         self.recent_full_res_observations.append(original_scale_gray_obs)
 
         # Detect swirlies
-        _, current_swirlies, collected_swirlies = track_swirlies(
-            original_scale_gray_obs, self.swirles_template, self.prev_swirlies
-        )
-        self.prev_swirlies = current_swirlies
+        collected_swirlies = 0
+        # _, current_swirlies, collected_swirlies = track_swirlies(
+        #     original_scale_gray_obs, self.swirles_template, self.prev_swirlies
+        # )
+        # self.prev_swirlies = current_swirlies
 
-        # Calculate frame difference
-        frame_diff = round(np.mean(np.abs(self.prev_observation - new_obs)))
-        self.prev_observation = new_obs  # Update previous observation
+        # # Calculate frame difference
+        # frame_diff = round(np.mean(np.abs(self.prev_observation - new_obs)))
+        # self.prev_observation = new_obs  # Update previous observation
 
         # Calculate reward using the external function
         reward, done, info = calculate_rewards(
@@ -120,7 +124,7 @@ class FPAGame(Env):
 
         info.update({
             "action": action,
-            "frame difference": frame_diff,
+            # "frame difference": frame_diff,
             "episode reward": reward,
             "total reward": self.total_reward,
             "last 10 rewards": list(self.rewards_list)
