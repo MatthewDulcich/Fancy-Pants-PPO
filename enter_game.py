@@ -89,9 +89,18 @@ def enter_game(window, pre_loaded=False):
         print("Exiting the room...")
         time.sleep(5)
         print("Entering the tutorial level...")
+        pyautogui.keyUp('s')
         pyautogui.keyUp('left')
         pyautogui.keyUp('up')
-        time.sleep(5)
+        time.sleep(9)
+        pyautogui.keyDown('right')
+        time.sleep(4)
+        pyautogui.keyDown('s')
+        time.sleep(2)
+        pyautogui.keyUp('right')
+        pyautogui.keyUp('s')
+        time.sleep(2)
+      
 
     print("Done entering game. Training begins now!")
 

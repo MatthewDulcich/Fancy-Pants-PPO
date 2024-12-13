@@ -40,11 +40,9 @@ def calculate_rewards(
     reward = 0
     done = False
 
-    # # Frame difference reward
-    # if frame_diff > frame_diff_threshold:
-    #     reward += (frame_diff - frame_diff_threshold) * positive_frame_diff_scaling_factor  # Scaled reward
-    # else:
-    #     reward -= (frame_diff_threshold - frame_diff) * negative_frame_diff_scaling_factor  # Gradual penalty
+    complete_level_reward = 500
+    wrong_door_penalty = 0
+    scale_swirlies_reward = 10
 
     # Reward for completing the level (door entry)
     if check_for_black_screen_func(original_scale_gray_obs):
