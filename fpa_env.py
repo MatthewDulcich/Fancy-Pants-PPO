@@ -41,8 +41,8 @@ class FPAGame(Env):
         self.prev_observation = None  # Initialize prev_observation
         self.total_reward = 0  # Initialize total reward
         self.rewards_list = deque(maxlen=10)  # Initialize rewards list
-        self.prev_swirlies = []  # Initialize prev_swirlies
-        self.swirles_template = cv2.imread("images/image_templates/swirly_gray.png", cv2.IMREAD_GRAYSCALE)
+        # self.prev_swirlies = []  # Initialize prev_swirlies
+        # self.swirles_template = cv2.imread("images/image_templates/swirly_gray.png", cv2.IMREAD_GRAYSCALE)
         # action map
         self.action_map = config['action_map']
 
@@ -112,7 +112,8 @@ class FPAGame(Env):
         reward, done, info = calculate_rewards(
             original_scale_gray_obs,
             self.recent_full_res_observations,
-            collected_swirlies,
+            # collected_swirlies,
+            frame_diff,
             self.checkpoint_matching,
             self.check_for_black_screen,
             self.entered_correct_door
@@ -127,7 +128,7 @@ class FPAGame(Env):
             # "frame difference": frame_diff,
             "episode reward": reward,
             "total reward": self.total_reward,
-            "last 10 rewards": list(self.rewards_list)
+            "frame difference": frame_diff
         })
 
         # Log relevant information with wandb

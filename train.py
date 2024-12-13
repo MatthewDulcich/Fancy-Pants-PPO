@@ -151,6 +151,7 @@ def main():
             logging.info(f"Length: {episode_length}")
             logging.info(f"PPO Loss: {ppo_loss:.4f}")
 
+
             # Log metrics to W&B
             wandb.log({
                 "episode count": episode_count,

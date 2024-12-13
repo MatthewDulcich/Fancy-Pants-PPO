@@ -66,7 +66,7 @@ class PPO:
             action = action_dist.sample()
             log_prob = action_dist.log_prob(action)
 
-            next_state, reward, done, _ = env.step(action.item())
+            next_state, reward, done, info = env.step(action.item())
 
             # Append to buffers
             states.append(state)
@@ -75,7 +75,7 @@ class PPO:
             log_probs.append(log_prob.item())
             values.append(state_value.item())
             dones.append(done)
-            print(f"Step {i + 1} | Action: {action.item()} | Reward: {reward} | Done: {done}")
+            print(f"Step {i + 1} | Action: {action.item()} | Reward: {reward} | Done: {done} | Frame Difference: {info['frame difference']}")
 
             # If done, break out of the loop to restart
             if done:
@@ -85,6 +85,9 @@ class PPO:
             else:
                 state = next_state
 
+            # if on the last step, print end of epsisode summary metrics
+            if i == n_steps - 1:
+                print(f"Average reward: {np.mean(rewards)} | Total reward: {np.sum(rewards)}")
 
         return (
             torch.tensor(np.array(states), dtype=torch.float32) / 255.0,

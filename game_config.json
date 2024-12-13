@@ -16,5 +16,13 @@
         "3": "down",
         "4": "up",
         "5": "no_action"
+    },
+    "reward_logic": {
+        "complete_level_reward": 500,
+        "wrong_door_penalty": -10,
+        "scale_swirlies_reward": 10,
+        "frame_diff_threshold": 5,
+        "positive_frame_diff_scaling_factor": 0.5,
+        "negative_frame_diff_scaling_factor": 0.7
     }
 }
