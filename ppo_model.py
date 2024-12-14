@@ -42,7 +42,7 @@ class PPOAgent(nn.Module):
         return policy_logits, state_value
 
 class PPO:
-    def __init__(self, input_channels, input_height, input_width, n_actions, lr=1e-4, gamma=0.98, epsilon=0.3, entropy_coef=0.03):
+    def __init__(self, input_channels, input_height, input_width, n_actions, lr=1e-4, gamma=0.98, epsilon=0.3, entropy_coef=0.02):
         self.policy = PPOAgent(input_channels, input_height, input_width, n_actions)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.gamma = gamma
